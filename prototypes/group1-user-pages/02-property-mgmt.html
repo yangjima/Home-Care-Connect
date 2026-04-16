@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房源管理 - 居服通管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background-color: #f0f2f5; color: #333; }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%); color: #fff; position: fixed; height: 100vh; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 25px 20px; font-size: 22px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-nav { flex: 1; padding: 20px 0; }
+        .nav-title { padding: 10px 20px; font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 15px; transition: all 0.3s; gap: 12px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; padding-left: 25px; }
+        .nav-item.active { background: rgba(44,123,229,0.3); border-left: 3px solid #2C7BE5; color: #fff; }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+        .nav-badge { margin-left: auto; background: #ff4d4f; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .sidebar-user { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
+        .user-name { font-size: 14px; color: #fff; font-weight: 500; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .main-content { margin-left: 240px; flex: 1; }
+        .topbar { background: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .topbar-title { font-size: 20px; font-weight: 600; }
+        .topbar-breadcrumb { font-size: 14px; color: #999; margin-top: 3px; }
+        .topbar-actions { display: flex; align-items: center; gap: 15px; }
+        .topbar-btn { padding: 8px 16px; background: #2C7BE5; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
+        .topbar-btn:hover { background: #1a6ad8; }
+        .btn-success { background: #4caf50 !important; }
+        .btn-success:hover { background: #43a047 !important; }
+        .content { padding: 25px 30px; }
+        /* 工具栏 */
+        .toolbar { background: #fff; border-radius: 12px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .toolbar-search { flex: 1; min-width: 200px; display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 10px 15px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; outline: none; }
+        .search-input:focus { border-color: #2C7BE5; }
+        .toolbar-select { padding: 10px 15px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; outline: none; min-width: 120px; }
+        /* 表格卡片 */
+        .table-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 15px 20px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .table th { background: #f8f9fa; font-weight: 600; color: #666; font-size: 14px; }
+        .table tr:hover td { background: #fafafa; }
+        .table tr:last-child td { border-bottom: none; }
+        .property-thumb { width: 80px; height: 60px; background: linear-gradient(135deg, #e0e0e0, #f5f5f5); border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; }
+        .property-info { display: flex; align-items: center; gap: 15px; }
+        .property-name { font-weight: 600; margin-bottom: 3px; }
+        .property-id { font-size: 12px; color: #999; }
+        .price { font-weight: bold; color: #FFA500; }
+        .status-tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+        .status-rented { background: #e8f5e9; color: #4caf50; }
+        .status-available { background: #e3f2fd; color: #2C7BE5; }
+        .status-pending { background: #fff3e0; color: #ff9800; }
+        .action-btn { padding: 6px 14px; border-radius: 4px; font-size: 13px; cursor: pointer; border: none; transition: all 0.3s; margin-right: 5px; }
+        .action-edit { background: #f0f7ff; color: #2C7BE5; }
+        .action-edit:hover { background: #e0f0ff; }
+        .action-view { background: #f5f5f5; color: #666; }
+        .action-view:hover { background: #e8e8e8; }
+        /* 分页 */
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; }
+        .pagination-info { font-size: 14px; color: #999; }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { padding: 6px 14px; border: 1px solid #e0e0e0; background: #fff; border-radius: 4px; font-size: 14px; cursor: pointer; color: #666; text-decoration: none; transition: all 0.3s; }
+        .page-btn:hover { border-color: #2C7BE5; color: #2C7BE5; }
+        .page-btn.active { background: #2C7BE5; color: #fff; border-color: #2C7BE5; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">🏠 居服通 · 店长后台</div>
+            <nav class="sidebar-nav">
+                <div class="nav-title">📊 运营中心</div>
+                <a href="01-dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>数据看板
+                </a>
+                <a href="02-property-mgmt.html" class="nav-item active">
+                    <span class="nav-icon">🏘️</span>房源管理
+                </a>
+                <a href="03-order-mgmt.html" class="nav-item">
+                    <span class="nav-icon">📋</span>订单管理
+                    <span class="nav-badge">8</span>
+                </a>
+                <a href="04-service-mgmt.html" class="nav-item">
+                    <span class="nav-icon">🛠️</span>服务管理
+                </a>
+                <div class="nav-title">👥 人员管理</div>
+                <a href="05-staff-mgmt.html" class="nav-item">
+                    <span class="nav-icon">👥</span>员工管理
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">💰</span>佣金管理
+                </a>
+                <div class="nav-title">⚙️ 系统</div>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">⚙️</span>系统设置
+                </a>
+            </nav>
+            <div class="sidebar-user">
+                <div class="user-avatar">王</div>
+                <div class="user-info">
+                    <div class="user-name">王店长</div>
+                    <div class="user-role">超级管理员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <div class="main-content">
+            <header class="topbar">
+                <div>
+                    <div class="topbar-title">🏘️ 房源管理</div>
+                    <div class="topbar-breadcrumb">首页 / 运营中心 / 房源管理</div>
+                </div>
+                <div class="topbar-actions">
+                    <a href="#" class="topbar-btn btn-success">➕ 新增房源</a>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- 工具栏 -->
+                <div class="toolbar">
+                    <div class="toolbar-search">
+                        <input type="text" class="search-input" placeholder="🔍 搜索房源名称、地址...">
+                        <button class="topbar-btn" style="position:static;">搜索</button>
+                    </div>
+                    <select class="toolbar-select">
+                        <option>全部区域</option>
+                        <option>朝阳区</option>
+                        <option>海淀区</option>
+                        <option>东城区</option>
+                        <option>西城区</option>
+                        <option>丰台区</option>
+                    </select>
+                    <select class="toolbar-select">
+                        <option>全部状态</option>
+                        <option>待出租</option>
+                        <option>已出租</option>
+                        <option>审核中</option>
+                    </select>
+                    <select class="toolbar-select">
+                        <option>全部类型</option>
+                        <option>公寓</option>
+                        <option>住宅</option>
+                        <option>商铺</option>
+                        <option>写字楼</option>
+                    </select>
+                </div>
+
+                <!-- 表格 -->
+                <div class="table-card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>房源信息</th>
+                                <th>区域</th>
+                                <th>面积</th>
+                                <th>租金</th>
+                                <th>状态</th>
+                                <th>发布者</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏠</div>
+                                        <div>
+                                            <div class="property-name">地铁口精装公寓</div>
+                                            <div class="property-id">#P2026040101</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>朝阳区</td>
+                                <td>45㎡</td>
+                                <td class="price">¥2,500/月</td>
+                                <td><span class="status-tag status-rented">已出租</span></td>
+                                <td>李明</td>
+                                <td>2026-04-16</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏡</div>
+                                        <div>
+                                            <div class="property-name">阳光充足主卧</div>
+                                            <div class="property-id">#P2026040102</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>海淀区</td>
+                                <td>25㎡</td>
+                                <td class="price">¥1,800/月</td>
+                                <td><span class="status-tag status-available">待出租</span></td>
+                                <td>张伟</td>
+                                <td>2026-04-15</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏠</div>
+                                        <div>
+                                            <div class="property-name">温馨一居室</div>
+                                            <div class="property-id">#P2026040103</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>东城区</td>
+                                <td>60㎡</td>
+                                <td class="price">¥3,200/月</td>
+                                <td><span class="status-tag status-rented">已出租</span></td>
+                                <td>陈静</td>
+                                <td>2026-04-14</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏢</div>
+                                        <div>
+                                            <div class="property-name">精装两室一厅</div>
+                                            <div class="property-id">#P2026040104</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>朝阳区</td>
+                                <td>85㎡</td>
+                                <td class="price">¥4,500/月</td>
+                                <td><span class="status-tag status-available">待出租</span></td>
+                                <td>刘洋</td>
+                                <td>2026-04-13</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏠</div>
+                                        <div>
+                                            <div class="property-name">学区房单间</div>
+                                            <div class="property-id">#P2026040105</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>海淀区</td>
+                                <td>18㎡</td>
+                                <td class="price">¥2,200/月</td>
+                                <td><span class="status-tag status-pending">审核中</span></td>
+                                <td>赵敏</td>
+                                <td>2026-04-12</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="property-info">
+                                        <div class="property-thumb">🏠</div>
+                                        <div>
+                                            <div class="property-name">CBD商圈写字楼</div>
+                                            <div class="property-id">#P2026040106</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>朝阳区</td>
+                                <td>120㎡</td>
+                                <td class="price">¥8,000/月</td>
+                                <td><span class="status-tag status-available">待出租</span></td>
+                                <td>李明</td>
+                                <td>2026-04-11</td>
+                                <td>
+                                    <button class="action-btn action-edit">编辑</button>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination">
+                        <div class="pagination-info">共 1,286 条记录，第 1/108 页</div>
+                        <div class="pagination-btns">
+                            <a href="#" class="page-btn">«</a>
+                            <a href="#" class="page-btn active">1</a>
+                            <a href="#" class="page-btn">2</a>
+                            <a href="#" class="page-btn">3</a>
+                            <a href="#" class="page-btn">...</a>
+                            <a href="#" class="page-btn">108</a>
+                            <a href="#" class="page-btn">»</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>居服通 - 首页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C7BE5;
+            margin-right: 50px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+        }
+        .nav-item {
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover {
+            background-color: #f0f7ff;
+            color: #2C7BE5;
+        }
+        .nav-right {
+            display: flex;
+            gap: 15px;
+        }
+        .btn-login {
+            padding: 8px 24px;
+            border: 1px solid #2C7BE5;
+            color: #2C7BE5;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #2C7BE5;
+            color: #fff;
+        }
+        /* 主内容区 */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px 40px;
+        }
+        /* 轮播图区域 */
+        .banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 400px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .banner-content {
+            text-align: center;
+            z-index: 1;
+        }
+        .banner h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .banner p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+        /* 快速入口 */
+        .quick-entry {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .quick-entry h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .entry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .entry-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 40px 20px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #333;
+        }
+        .entry-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .entry-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .entry-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        /* 热门房源 */
+        .section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 24px;
+            color: #333;
+        }
+        .more-link {
+            color: #2C7BE5;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .property-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .property-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+        }
+        .property-image {
+            width: 100%;
+            height: 200px;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 14px;
+        }
+        .property-info {
+            padding: 15px;
+        }
+        .property-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .property-price {
+            font-size: 20px;
+            color: #FFA500;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .property-details {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .property-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            background-color: #f0f7ff;
+            color: #2C7BE5;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        /* 推荐服务 */
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .service-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 30px 20px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            background: #fff;
+        }
+        .service-card:hover {
+            border-color: #2C7BE5;
+            box-shadow: 0 4px 16px rgba(44, 123, 229, 0.15);
+        }
+        .service-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .service-name {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .service-price {
+            font-size: 16px;
+            color: #FFA500;
+        }
+        /* AI助手悬浮按钮 */
+        .ai-assistant {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        .ai-assistant:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .ai-icon {
+            font-size: 28px;
+            color: #fff;
+        }
+        /* 页脚 */
+        .footer {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 40px;
+            text-align: center;
+            margin-top: 60px;
+        }
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .footer-link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="logo">🏠 居服通</div>
+        <div class="nav-menu">
+            <a href="01-home.html" class="nav-item">首页</a>
+            <a href="02-property-list.html" class="nav-item">房源</a>
+            <a href="04-service-list.html" class="nav-item">服务</a>
+            <a href="01-purchase.html" class="nav-item">本地商城</a>
+            <a href="02-secondhand.html" class="nav-item">跳蚤市场</a>
+        </div>
+        <div class="nav-right">
+            <a href="#" class="btn-login">登录</a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 轮播图 Banner -->
+        <div class="banner">
+            <div class="banner-content">
+                <h1>找房子 · 找服务 · 一站搞定</h1>
+                <p>本地化房源分销 + 社区服务 + 资产管理平台</p>
+            </div>
+        </div>
+
+        <!-- 快速入口 -->
+        <div class="quick-entry">
+            <h2>快速入口</h2>
+            <div class="entry-grid">
+                <a href="02-property-list.html" class="entry-card">
+                    <div class="entry-icon">🏠</div>
+                    <div class="entry-title">找房子</div>
+                </a>
+                <a href="04-service-list.html" class="entry-card">
+                    <div class="entry-icon">🧹</div>
+                    <div class="entry-title">找保洁</div>
+                </a>
+                <a href="04-service-list.html" class="entry-card">
+                    <div class="entry-icon">🔧</div>
+                    <div class="entry-title">找维修</div>
+                </a>
+                <a href="01-purchase.html" class="entry-card">
+                    <div class="entry-icon">🛒</div>
+                    <div class="entry-title">本地商城</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 热门房源 -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">🔥 热门房源</h2>
+                <a href="02-property-list.html" class="more-link">查看更多 →</a>
+            </div>
+            <div class="property-grid">
+                <!-- 房源卡片 1 -->
+                <div class="property-card">
+                    <div class="property-image">房源图片占位符</div>
+                    <div class="property-info">
+                        <div class="property-title">地铁口精装公寓</div>
+                        <div class="property-price">¥2,500/月</div>
+                        <div class="property-details">45㎡ | 5楼 | 朝阳区</div>
+                        <div class="property-tags">
+                            <span class="tag">空调</span>
+                            <span class="tag">热水器</span>
+                            <span class="tag">洗衣机</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 房源卡片 2 -->
+                <div class="property-card">
+                    <div class="property-image">房源图片占位符</div>
+                    <div class="property-info">
+                        <div class="property-title">阳光充足主卧</div>
+                        <div class="property-price">¥1,800/月</div>
+                        <div class="property-details">30㎡ | 3楼 | 海淀区</div>
+                        <div class="property-tags">
+                            <span class="tag">独立卫浴</span>
+                            <span class="tag">阳台</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 房源卡片 3 -->
+                <div class="property-card">
+                    <div class="property-image">房源图片占位符</div>
+                    <div class="property-info">
+                        <div class="property-title">温馨一居室</div>
+                        <div class="property-price">¥3,200/月</div>
+                        <div class="property-details">55㎡ | 8楼 | 东城区</div>
+                        <div class="property-tags">
+                            <span class="tag">精装修</span>
+                            <span class="tag">家电齐全</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 推荐服务 -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">💼 推荐服务</h2>
+                <a href="04-service-list.html" class="more-link">查看更多 →</a>
+            </div>
+            <div class="service-grid">
+                <!-- 服务卡片 1 -->
+                <div class="service-card">
+                    <div class="service-icon">🧹</div>
+                    <div class="service-name">家庭保洁</div>
+                    <div class="service-price">¥80起/次</div>
+                </div>
+
+                <!-- 服务卡片 2 -->
+                <div class="service-card">
+                    <div class="service-icon">🔧</div>
+                    <div class="service-name">家电维修</div>
+                    <div class="service-price">¥100起/次</div>
+                </div>
+
+                <!-- 服务卡片 3 -->
+                <div class="service-card">
+                    <div class="service-icon">🚰</div>
+                    <div class="service-name">管道疏通</div>
+                    <div class="service-price">¥120起/次</div>
+                </div>
+
+                <!-- 服务卡片 4 -->
+                <div class="service-card">
+                    <div class="service-icon">🔑</div>
+                    <div class="service-name">开锁换锁</div>
+                    <div class="service-price">¥150起/次</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#" class="footer-link">关于我们</a>
+                <a href="#" class="footer-link">联系方式</a>
+                <a href="#" class="footer-link">用户协议</a>
+                <a href="#" class="footer-link">隐私政策</a>
+            </div>
+            <p>© 2026 居服通 Home Care Connect. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

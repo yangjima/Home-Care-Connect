@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务预约 - 居服通</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C7BE5;
+            margin-right: 50px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+        }
+        .nav-item {
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover {
+            background-color: #f0f7ff;
+            color: #2C7BE5;
+        }
+        .nav-right {
+            display: flex;
+            gap: 15px;
+        }
+        .btn-login {
+            padding: 8px 24px;
+            border: 1px solid #2C7BE5;
+            color: #2C7BE5;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #2C7BE5;
+            color: #fff;
+        }
+        /* 主内容区 */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px 40px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* 面包屑导航 */
+        .breadcrumb {
+            padding: 15px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .breadcrumb a {
+            color: #2C7BE5;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        /* 预约容器 */
+        .booking-container {
+            display: flex;
+            gap: 25px;
+        }
+        /* 左侧表单 */
+        .booking-form-container {
+            flex: 1;
+            background: #fff;
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .form-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        /* 服务选择 */
+        .service-selection {
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .selected-service {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .service-icon-selected {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            flex-shrink: 0;
+        }
+        .service-info-selected {
+            flex: 1;
+        }
+        .service-name-selected {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .service-price-selected {
+            font-size: 20px;
+            color: #FFA500;
+            font-weight: bold;
+        }
+        .btn-change-service {
+            padding: 8px 20px;
+            background-color: #fff;
+            color: #2C7BE5;
+            border: 1px solid #2C7BE5;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-change-service:hover {
+            background-color: #f0f7ff;
+        }
+        /* 表单区域 */
+        .booking-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-section {
+            margin-bottom: 10px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .required {
+            color: #ff4d4f;
+            margin-left: 3px;
+        }
+        .form-input {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .form-input:focus {
+            border-color: #2C7BE5;
+            box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.1);
+        }
+        .form-textarea {
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+        .form-textarea:focus {
+            border-color: #2C7BE5;
+            box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.1);
+        }
+        /* 时间选择 */
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .time-slot {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .time-slot:hover {
+            border-color: #2C7BE5;
+            color: #2C7BE5;
+        }
+        .time-slot.selected {
+            background-color: #2C7BE5;
+            color: #fff;
+            border-color: #2C7BE5;
+        }
+        .time-slot.disabled {
+            background-color: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        /* 提交按钮 */
+        .submit-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #f0f0f0;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background-color: #FFA500;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-submit:hover {
+            background-color: #ff8c00;
+            box-shadow: 0 4px 12px rgba(255, 165, 0, 0.3);
+        }
+        /* 右侧信息卡片 */
+        .info-sidebar {
+            width: 350px;
+        }
+        .info-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .info-card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        /* 订单摘要 */
+        .order-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .summary-item:last-child {
+            border-bottom: none;
+            padding-top: 12px;
+            border-top: 2px solid #f0f0f0;
+        }
+        .summary-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .summary-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        .summary-total {
+            font-size: 20px;
+            color: #FFA500;
+            font-weight: bold;
+        }
+        /* 服务说明 */
+        .service-notes {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .service-notes li {
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+        /* 联系方式 */
+        .contact-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 20px;
+            color: #fff;
+            text-align: center;
+        }
+        .contact-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .contact-phone {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .contact-time {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        /* AI助手 */
+        .ai-assistant {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        .ai-assistant:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .ai-icon {
+            font-size: 28px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="logo">🏠 居服通</div>
+        <div class="nav-menu">
+            <a href="01-home.html" class="nav-item">首页</a>
+            <a href="02-property-list.html" class="nav-item">房源</a>
+            <a href="04-service-list.html" class="nav-item" style="background-color: #f0f7ff; color: #2C7BE5;">服务</a>
+            <a href="01-purchase.html" class="nav-item">本地商城</a>
+            <a href="02-secondhand.html" class="nav-item">跳蚤市场</a>
+        </div>
+        <div class="nav-right">
+            <a href="#" class="btn-login">登录</a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="01-home.html">首页</a> / <a href="04-service-list.html">服务列表</a> / 服务预约
+        </div>
+
+        <!-- 预约容器 -->
+        <div class="booking-container">
+            <!-- 左侧表单 -->
+            <div class="booking-form-container">
+                <div class="form-title">📝 服务预约</div>
+
+                <!-- 服务选择 -->
+                <div class="service-selection">
+                    <div class="selected-service">
+                        <div class="service-icon-selected">🧹</div>
+                        <div class="service-info-selected">
+                            <div class="service-name-selected">家庭保洁</div>
+                            <div class="service-price-selected">¥80起/次</div>
+                        </div>
+                        <button class="btn-change-service" onclick="location.href='04-service-list.html'">更换服务</button>
+                    </div>
+                </div>
+
+                <!-- 预约表单 -->
+                <form class="booking-form">
+                    <!-- 联系信息 -->
+                    <div class="form-section">
+                        <div class="section-title">👤 联系信息</div>
+                        <div class="form-group">
+                            <label class="form-label">您的姓名<span class="required">*</span></label>
+                            <input type="text" class="form-input" placeholder="请输入您的姓名" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系电话<span class="required">*</span></label>
+                            <input type="tel" class="form-input" placeholder="请输入您的手机号" required>
+                        </div>
+                    </div>
+
+                    <!-- 服务地址 -->
+                    <div class="form-section">
+                        <div class="section-title">📍 服务地址</div>
+                        <div class="form-group">
+                            <label class="form-label">详细地址<span class="required">*</span></label>
+                            <input type="text" class="form-input" placeholder="请输入详细地址（如：朝阳区建国路88号3单元501室）" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">门牌号</label>
+                            <input type="text" class="form-input" placeholder="请输入门牌号（选填）">
+                        </div>
+                    </div>
+
+                    <!-- 预约时间 -->
+                    <div class="form-section">
+                        <div class="section-title">🕐 预约时间</div>
+                        <div class="form-group">
+                            <label class="form-label">选择日期<span class="required">*</span></label>
+                            <input type="date" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">选择时段<span class="required">*</span></label>
+                            <div class="time-slots">
+                                <div class="time-slot">08:00-10:00</div>
+                                <div class="time-slot selected">10:00-12:00</div>
+                                <div class="time-slot">12:00-14:00</div>
+                                <div class="time-slot">14:00-16:00</div>
+                                <div class="time-slot">16:00-18:00</div>
+                                <div class="time-slot disabled">18:00-20:00 (已约满)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 服务要求 -->
+                    <div class="form-section">
+                        <div class="section-title">📋 服务要求</div>
+                        <div class="form-group">
+                            <label class="form-label">房屋面积（㎡）<span class="required">*</span></label>
+                            <input type="number" class="form-input" placeholder="请输入房屋面积" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">特殊要求</label>
+                            <textarea class="form-textarea" placeholder="请描述您的特殊要求或需要注意的事项（选填）"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="submit-section">
+                        <button type="submit" class="btn-submit">确认预约</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 右侧信息卡片 -->
+            <div class="info-sidebar">
+                <!-- 订单摘要 -->
+                <div class="info-card">
+                    <div class="info-card-title">💰 订单摘要</div>
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">服务类型</span>
+                            <span class="summary-value">家庭保洁</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">服务时间</span>
+                            <span class="summary-value">2026-04-20 10:00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">预计时长</span>
+                            <span class="summary-value">2-3小时</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">服务费用</span>
+                            <span class="summary-value">¥80起</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">预计总价</span>
+                            <span class="summary-total">¥120</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 服务说明 -->
+                <div class="info-card">
+                    <div class="info-card-title">📌 服务说明</div>
+                    <ul class="service-notes">
+                        <li>✓ 专业保洁团队，持证上岗</li>
+                        <li>✓ 使用环保清洁剂，安全无害</li>
+                        <li>✓ 服务前会提前联系确认</li>
+                        <li>✓ 如需取消请提前2小时通知</li>
+                        <li>✓ 服务完成后可进行评价</li>
+                        <li>✓ 实际费用以现场评估为准</li>
+                    </ul>
+                </div>
+
+                <!-- 联系客服 -->
+                <div class="info-card">
+                    <div class="contact-info">
+                        <div class="contact-title">需要帮助？</div>
+                        <div class="contact-phone">400-888-8888</div>
+                        <div class="contact-time">服务时间：8:00-22:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
+</body>
+</html>

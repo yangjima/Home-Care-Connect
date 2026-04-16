@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务管理 - 居服通管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background-color: #f0f2f5; color: #333; }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%); color: #fff; position: fixed; height: 100vh; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 25px 20px; font-size: 22px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-nav { flex: 1; padding: 20px 0; }
+        .nav-title { padding: 10px 20px; font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 15px; transition: all 0.3s; gap: 12px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; padding-left: 25px; }
+        .nav-item.active { background: rgba(44,123,229,0.3); border-left: 3px solid #2C7BE5; color: #fff; }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+        .nav-badge { margin-left: auto; background: #ff4d4f; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .sidebar-user { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
+        .user-name { font-size: 14px; color: #fff; font-weight: 500; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .main-content { margin-left: 240px; flex: 1; }
+        .topbar { background: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .topbar-title { font-size: 20px; font-weight: 600; }
+        .topbar-breadcrumb { font-size: 14px; color: #999; margin-top: 3px; }
+        .topbar-actions { display: flex; align-items: center; gap: 15px; }
+        .topbar-btn { padding: 8px 16px; background: #2C7BE5; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
+        .topbar-btn:hover { background: #1a6ad8; }
+        .btn-success { background: #4caf50 !important; }
+        .btn-success:hover { background: #43a047 !important; }
+        .content { padding: 25px 30px; }
+        /* 服务卡片网格 */
+        .service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .service-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .service-card:hover { transform: translateY(-5px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .service-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #f0f0f0; }
+        .service-icon { width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+        .service-name { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+        .service-category { font-size: 13px; color: #999; }
+        .service-body { padding: 15px 20px; }
+        .service-meta { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .service-price { font-size: 20px; font-weight: bold; color: #FFA500; }
+        .service-count { color: #666; }
+        .service-count span { color: #2C7BE5; font-weight: 600; }
+        .service-status { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+        .status-on { background: #e8f5e9; color: #4caf50; }
+        .status-off { background: #f5f5f5; color: #999; }
+        .service-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; display: flex; gap: 10px; }
+        .action-btn { flex: 1; padding: 8px; text-align: center; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; transition: all 0.3s; }
+        .action-edit { background: #f0f7ff; color: #2C7BE5; }
+        .action-edit:hover { background: #e0f0ff; }
+        .action-schedule { background: #fff3e0; color: #ff9800; }
+        .action-schedule:hover { background: #ffe0b2; }
+        /* 评价管理 */
+        .section { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 25px; }
+        .section-header { padding: 20px 25px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { font-size: 16px; font-weight: 600; }
+        .review-list { list-style: none; }
+        .review-item { padding: 18px 25px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 15px; align-items: flex-start; }
+        .review-item:last-child { border-bottom: none; }
+        .review-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; flex-shrink: 0; }
+        .review-content { flex: 1; }
+        .review-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .review-user { font-size: 14px; font-weight: 600; }
+        .review-service { font-size: 13px; color: #2C7BE5; background: #e8f5ff; padding: 2px 8px; border-radius: 4px; }
+        .review-text { font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 6px; }
+        .review-stars { color: #FFA500; font-size: 14px; margin-bottom: 4px; }
+        .review-time { font-size: 13px; color: #999; }
+        .review-action { display: flex; flex-direction: column; gap: 5px; }
+        .review-btn { padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; transition: all 0.3s; }
+        .review-reply { background: #f0f7ff; color: #2C7BE5; }
+        .review-hide { background: #f5f5f5; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">🏠 居服通 · 店长后台</div>
+            <nav class="sidebar-nav">
+                <div class="nav-title">📊 运营中心</div>
+                <a href="01-dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>数据看板
+                </a>
+                <a href="02-property-mgmt.html" class="nav-item">
+                    <span class="nav-icon">🏘️</span>房源管理
+                </a>
+                <a href="03-order-mgmt.html" class="nav-item">
+                    <span class="nav-icon">📋</span>订单管理
+                    <span class="nav-badge">8</span>
+                </a>
+                <a href="04-service-mgmt.html" class="nav-item active">
+                    <span class="nav-icon">🛠️</span>服务管理
+                </a>
+                <div class="nav-title">👥 人员管理</div>
+                <a href="05-staff-mgmt.html" class="nav-item">
+                    <span class="nav-icon">👥</span>员工管理
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">💰</span>佣金管理
+                </a>
+                <div class="nav-title">⚙️ 系统</div>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">⚙️</span>系统设置
+                </a>
+            </nav>
+            <div class="sidebar-user">
+                <div class="user-avatar">王</div>
+                <div class="user-info">
+                    <div class="user-name">王店长</div>
+                    <div class="user-role">超级管理员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <div class="main-content">
+            <header class="topbar">
+                <div>
+                    <div class="topbar-title">🛠️ 服务管理</div>
+                    <div class="topbar-breadcrumb">首页 / 运营中心 / 服务管理</div>
+                </div>
+                <div class="topbar-actions">
+                    <a href="#" class="topbar-btn btn-success">➕ 新增服务</a>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- 服务项目卡片 -->
+                <div class="service-grid">
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">🧹</div>
+                            <div>
+                                <div class="service-name">家庭保洁</div>
+                                <div class="service-category">日常服务</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥80起</span>
+                                <span class="service-count">本月订单 <span>286</span></span>
+                            </div>
+                            <span class="service-status status-on">已上线</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">🔧</div>
+                            <div>
+                                <div class="service-name">日常维修</div>
+                                <div class="service-category">维修服务</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥120起</span>
+                                <span class="service-count">本月订单 <span>158</span></span>
+                            </div>
+                            <span class="service-status status-on">已上线</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">❄️</div>
+                            <div>
+                                <div class="service-name">空调清洗</div>
+                                <div class="service-category">深度清洁</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥150起</span>
+                                <span class="service-count">本月订单 <span>92</span></span>
+                            </div>
+                            <span class="service-status status-on">已上线</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">🪟</div>
+                            <div>
+                                <div class="service-name">开荒保洁</div>
+                                <div class="service-category">专业服务</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥200起</span>
+                                <span class="service-count">本月订单 <span>64</span></span>
+                            </div>
+                            <span class="service-status status-on">已上线</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">🏠</div>
+                            <div>
+                                <div class="service-name">搬家服务</div>
+                                <div class="service-category">生活服务</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥300起</span>
+                                <span class="service-count">本月订单 <span>38</span></span>
+                            </div>
+                            <span class="service-status status-off">已下架</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-icon">🐛</div>
+                            <div>
+                                <div class="service-name">除虫服务</div>
+                                <div class="service-category">专业服务</div>
+                            </div>
+                        </div>
+                        <div class="service-body">
+                            <div class="service-meta">
+                                <span class="service-price">¥180起</span>
+                                <span class="service-count">本月订单 <span>25</span></span>
+                            </div>
+                            <span class="service-status status-on">已上线</span>
+                        </div>
+                        <div class="service-footer">
+                            <button class="action-btn action-edit">编辑</button>
+                            <button class="action-btn action-schedule">排班</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户评价 -->
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-title">📝 最新用户评价</div>
+                        <a href="#" class="topbar-btn" style="padding:5px 12px; font-size:13px;">查看全部</a>
+                    </div>
+                    <ul class="review-list">
+                        <li class="review-item">
+                            <div class="review-avatar">李</div>
+                            <div class="review-content">
+                                <div class="review-header">
+                                    <span class="review-user">李先生</span>
+                                    <span class="review-service">家庭保洁</span>
+                                </div>
+                                <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                                <div class="review-text">服务非常专业，保洁员准时到达，工作细致认真，家里打扫得很干净，下次还选这家！</div>
+                                <div class="review-time">2026-04-16 11:30</div>
+                            </div>
+                            <div class="review-action">
+                                <button class="review-btn review-reply">回复</button>
+                                <button class="review-btn review-hide">隐藏</button>
+                            </div>
+                        </li>
+                        <li class="review-item">
+                            <div class="review-avatar">张</div>
+                            <div class="review-content">
+                                <div class="review-header">
+                                    <span class="review-user">张女士</span>
+                                    <span class="review-service">日常维修</span>
+                                </div>
+                                <div class="review-stars">⭐⭐⭐⭐</div>
+                                <div class="review-text">维修师傅很专业，水管问题很快解决了，收费也比较合理。就是来得稍微晚了一点。</div>
+                                <div class="review-time">2026-04-15 16:45</div>
+                            </div>
+                            <div class="review-action">
+                                <button class="review-btn review-reply">回复</button>
+                                <button class="review-btn review-hide">隐藏</button>
+                            </div>
+                        </li>
+                        <li class="review-item">
+                            <div class="review-avatar">王</div>
+                            <div class="review-content">
+                                <div class="review-header">
+                                    <span class="review-user">王先生</span>
+                                    <span class="review-service">空调清洗</span>
+                                </div>
+                                <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                                <div class="review-text">清洗完空调制冷效果明显好了很多，而且师傅很细心，连出风口都擦干净了，强烈推荐！</div>
+                                <div class="review-time">2026-04-14 10:15</div>
+                            </div>
+                            <div class="review-action">
+                                <button class="review-btn review-reply">回复</button>
+                                <button class="review-btn review-hide">隐藏</button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI对话助手 - 居服通</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
+        /* 顶部导航 */
+        .topbar {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .topbar-logo { font-size: 20px; font-weight: bold; color: #6ba3ff; display: flex; align-items: center; gap: 8px; }
+        .topbar-info { font-size: 14px; color: rgba(255,255,255,0.5); }
+        .topbar-actions { display: flex; gap: 10px; }
+        .topbar-btn { padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: rgba(255,255,255,0.7); transition: all 0.3s; }
+        .topbar-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        /* 聊天容器 */
+        .chat-container { max-width: 800px; margin: 0 auto; height: calc(100vh - 60px); display: flex; flex-direction: column; }
+        /* 欢迎区 */
+        .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+        .welcome-icon { font-size: 64px; margin-bottom: 20px; }
+        .welcome-title { font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+        .welcome-subtitle { font-size: 16px; color: rgba(255,255,255,0.5); margin-bottom: 30px; text-align: center; }
+        .quick-prompts { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 600px; }
+        .prompt-chip { padding: 10px 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .prompt-chip:hover { background: rgba(44,123,229,0.3); border-color: rgba(44,123,229,0.5); color: #fff; transform: translateY(-2px); }
+        /* 消息区 */
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .message { display: flex; gap: 12px; align-items: flex-start; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .msg-avatar.ai { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .msg-avatar.user { background: rgba(255,255,255,0.15); }
+        .msg-bubble-wrap { flex: 1; }
+        .msg-role { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 5px; }
+        .msg-bubble { background: rgba(255,255,255,0.08); border-radius: 16px; padding: 12px 18px; font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.9); max-width: 85%; }
+        .msg-bubble.user-bubble { background: rgba(44,123,229,0.4); }
+        .msg-time { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 5px; }
+        /* 消息列表样式 */
+        .messages.has-chat .welcome { display: none; }
+        .messages.has-chat { display: flex; flex-direction: column; }
+        /* 输入区 */
+        .input-area { padding: 15px 20px 25px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.08); }
+        .input-wrapper { display: flex; gap: 12px; align-items: flex-end; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 8px 8px 8px 18px; transition: all 0.3s; }
+        .input-wrapper:focus-within { border-color: rgba(44,123,229,0.5); background: rgba(255,255,255,0.12); }
+        .input-field { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 14px; font-family: inherit; resize: none; max-height: 120px; line-height: 1.5; }
+        .input-field::placeholder { color: rgba(255,255,255,0.3); }
+        .input-actions { display: flex; gap: 8px; align-items: center; }
+        .send-btn { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .send-btn:hover { transform: scale(1.1); }
+        .icon-action { width: 32px; height: 32px; border-radius: 50%; background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .icon-action:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+        /* 提示文字 */
+        .input-hint { font-size: 12px; color: rgba(255,255,255,0.3); text-align: center; margin-top: 8px; }
+        /* 功能标签 */
+        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; max-width: 600px; margin: 0 auto; padding: 0 20px; }
+        .feature-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .feature-card:hover { background: rgba(44,123,229,0.2); border-color: rgba(44,123,229,0.3); }
+        .feature-icon { font-size: 28px; margin-bottom: 8px; }
+        .feature-name { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="topbar">
+        <div class="topbar-logo">🤖 AI对话助手</div>
+        <div class="topbar-info">由智能大模型驱动 · 24小时在线</div>
+        <div class="topbar-actions">
+            <button class="topbar-btn">📋 历史对话</button>
+            <button class="topbar-btn">⚙️ 设置</button>
+        </div>
+    </header>
+
+    <div class="chat-container">
+        <!-- 消息区域 -->
+        <div class="messages" id="messagesArea">
+            <!-- 欢迎区（无消息时显示） -->
+            <div class="welcome" id="welcomeArea">
+                <div class="welcome-icon">🤖</div>
+                <div class="welcome-title">你好，我是居服通AI助手</div>
+                <div class="welcome-subtitle">可以帮你查询物业、订单、服务等问题，也可以聊聊社区生活</div>
+
+                <div class="features">
+                    <div class="feature-card" onclick="sendQuickPrompt('帮我查询本月物业账单')">
+                        <div class="feature-icon">💰</div>
+                        <div class="feature-name">物业账单查询</div>
+                    </div>
+                    <div class="feature-card" onclick="sendQuickPrompt('推荐附近的家政服务')">
+                        <div class="feature-icon">🧹</div>
+                        <div class="feature-name">家政服务推荐</div>
+                    </div>
+                    <div class="feature-card" onclick="sendQuickPrompt('如何发布闲置物品？')">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-name">闲置发布指南</div>
+                    </div>
+                    <div class="feature-card" onclick="sendQuickPrompt('社区有什么活动？')">
+                        <div class="feature-icon">🎉</div>
+                        <div class="feature-name">社区活动</div>
+                    </div>
+                    <div class="feature-card" onclick="sendQuickPrompt('停车费如何缴纳？')">
+                        <div class="feature-icon">🚗</div>
+                        <div class="feature-name">停车费用</div>
+                    </div>
+                    <div class="feature-card" onclick="sendQuickPrompt('推荐附近美食')">
+                        <div class="feature-icon">🍜</div>
+                        <div class="feature-name">周边美食</div>
+                    </div>
+                </div>
+
+                <div class="quick-prompts" style="margin-top:25px;">
+                    <div class="prompt-chip" onclick="sendQuickPrompt('你好，能介绍一下居服通平台吗？')">👋 你好，介绍一下平台</div>
+                    <div class="prompt-chip" onclick="sendQuickPrompt('我想预约保洁服务')">🧹 预约保洁服务</div>
+                    <div class="prompt-chip" onclick="sendQuickPrompt('我的订单到哪了？')">📦 查看我的订单</div>
+                </div>
+            </div>
+
+            <!-- 示例对话（预填充） -->
+            <div class="message">
+                <div class="msg-avatar ai">🤖</div>
+                <div class="msg-bubble-wrap">
+                    <div class="msg-role">AI助手</div>
+                    <div class="msg-bubble">您好！我是居服通AI助手 👋 很高兴为您服务！无论是物业咨询、订单查询、服务预约还是社区生活问题，我都可以帮您解答。请问有什么可以帮您的？</div>
+                    <div class="msg-time">刚刚</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea class="input-field" id="msgInput" rows="1" placeholder="输入您的问题..." onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                <div class="input-actions">
+                    <button class="icon-action" title="上传图片">📷</button>
+                    <button class="icon-action" title="发送语音">🎤</button>
+                    <button class="send-btn" onclick="sendMessage()">➤</button>
+                </div>
+            </div>
+            <div class="input-hint">AI助手会尽力提供准确信息，但建议重要事项联系人工客服确认</div>
+        </div>
+    </div>
+
+    <script>
+        function sendQuickPrompt(text) {
+            document.getElementById('msgInput').value = text;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const messagesArea = document.getElementById('messagesArea');
+            const welcomeArea = document.getElementById('welcomeArea');
+
+            // 隐藏欢迎区
+            welcomeArea.style.display = 'none';
+            messagesArea.classList.add('has-chat');
+
+            // 添加用户消息
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message';
+            userMsg.innerHTML = `
+                <div class="msg-avatar user">👤</div>
+                <div class="msg-bubble-wrap">
+                    <div class="msg-role">我</div>
+                    <div class="msg-bubble user-bubble">${text}</div>
+                    <div class="msg-time">刚刚</div>
+                </div>
+            `;
+            messagesArea.appendChild(userMsg);
+
+            // 滚动到底部
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+            input.value = '';
+            input.style.height = 'auto';
+
+            // 模拟AI回复
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'message';
+                aiMsg.innerHTML = `
+                    <div class="msg-avatar ai">🤖</div>
+                    <div class="msg-bubble-wrap">
+                        <div class="msg-role">AI助手</div>
+                        <div class="msg-bubble">好的，我已经收到您的问题。根据您的描述，我来帮您查询相关信息... 请稍等片刻，我会尽快为您提供准确的答案。如果您还有其他问题，欢迎继续提问！😊</div>
+                        <div class="msg-time">刚刚</div>
+                    </div>
+                `;
+                messagesArea.appendChild(aiMsg);
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            }, 1200);
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        }
+    </script>
+</body>
+</html>

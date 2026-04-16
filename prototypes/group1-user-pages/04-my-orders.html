@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的订单 - 居服通</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+        }
+        .logo { font-size: 24px; font-weight: bold; color: #2C7BE5; margin-right: 50px; text-decoration: none; }
+        .nav-menu { display: flex; gap: 30px; flex: 1; }
+        .nav-item { color: #333; text-decoration: none; font-size: 16px; padding: 8px 16px; border-radius: 4px; transition: all 0.3s; }
+        .nav-item:hover, .nav-item.active { background-color: #f0f7ff; color: #2C7BE5; }
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .user-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .user-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+        .user-name { font-size: 14px; color: #333; }
+        /* 主内容区 */
+        .main-content { margin-top: 60px; padding: 20px 40px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+        /* 页头 */
+        .page-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 30px; margin-bottom: 30px; color: #fff; }
+        .page-title { font-size: 28px; margin-bottom: 10px; }
+        .page-subtitle { opacity: 0.9; font-size: 14px; }
+        /* Tab标签 */
+        .tabs { background: #fff; border-radius: 12px; padding: 0 30px; margin-bottom: 25px; display: flex; gap: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .tab { padding: 15px 25px; font-size: 15px; color: #666; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .tab:hover { color: #2C7BE5; }
+        .tab.active { color: #2C7BE5; border-bottom-color: #2C7BE5; font-weight: 600; }
+        /* 订单卡片 */
+        .order-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; }
+        .order-header { padding: 15px 25px; background: #f8f9fa; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; }
+        .order-time { font-size: 14px; color: #666; }
+        .order-status { font-size: 14px; font-weight: 600; }
+        .status-pending { color: #ff9800; }
+        .status-processing { color: #2C7BE5; }
+        .status-completed { color: #4caf50; }
+        .status-cancelled { color: #999; }
+        .order-body { padding: 20px 25px; display: flex; gap: 20px; align-items: center; }
+        .order-image { width: 100px; height: 75px; background: #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; flex-shrink: 0; }
+        .order-info { flex: 1; }
+        .order-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .order-meta { font-size: 13px; color: #999; margin-bottom: 5px; }
+        .order-price { text-align: right; }
+        .price-label { font-size: 13px; color: #999; }
+        .price-value { font-size: 20px; font-weight: bold; color: #FFA500; }
+        .order-footer { padding: 15px 25px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .order-id { font-size: 13px; color: #999; }
+        .order-actions { display: flex; gap: 10px; }
+        .btn-cancel { padding: 8px 20px; border: 1px solid #ddd; background: #fff; color: #666; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.3s; }
+        .btn-cancel:hover { border-color: #ff4d4f; color: #ff4d4f; }
+        .btn-pay { padding: 8px 20px; background: #FFA500; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.3s; }
+        .btn-pay:hover { background: #ff8c00; }
+        .btn-detail { padding: 8px 20px; border: 1px solid #2C7BE5; background: #fff; color: #2C7BE5; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.3s; }
+        .btn-detail:hover { background: #f0f7ff; }
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
+        .page-btn { padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; color: #333; transition: all 0.3s; }
+        .page-btn:hover { border-color: #2C7BE5; color: #2C7BE5; }
+        .page-btn.active { background: #2C7BE5; color: #fff; border-color: #2C7BE5; }
+        /* AI助手 */
+        .ai-assistant { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.2); transition: all 0.3s; z-index: 999; }
+        .ai-assistant:hover { transform: scale(1.1); }
+        .ai-icon { font-size: 28px; color: #fff; }
+        /* 页脚 */
+        .footer { background-color: #2c3e50; color: #fff; padding: 30px 40px; text-align: center; margin-top: 40px; }
+        .footer p { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <a href="../group1-user-pages/01-home.html" class="logo">🏠 居服通</a>
+        <div class="nav-menu">
+            <a href="../group1-user-pages/01-home.html" class="nav-item">首页</a>
+            <a href="../group1-user-pages/02-property-list.html" class="nav-item">房源</a>
+            <a href="../group1-user-pages/04-service-list.html" class="nav-item">服务</a>
+            <a href="../group1-user-pages/01-purchase.html" class="nav-item">本地商城</a>
+            <a href="../group1-user-pages/02-secondhand.html" class="nav-item">跳蚤市场</a>
+        </div>
+        <div class="nav-right">
+            <div class="user-info">
+                <div class="user-avatar">李</div>
+                <div class="user-name">李明（分销员）</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 页头 -->
+        <div class="page-header">
+            <h1 class="page-title">📋 我的订单</h1>
+            <p class="page-subtitle">管理您的服务预约、房源订单和本地商城记录</p>
+        </div>
+
+        <!-- Tab标签 -->
+        <div class="tabs">
+            <div class="tab active">全部订单</div>
+            <div class="tab">待支付</div>
+            <div class="tab">进行中</div>
+            <div class="tab">已完成</div>
+            <div class="tab">已取消</div>
+        </div>
+
+        <!-- 订单卡片列表 -->
+        <!-- 订单1：待支付 -->
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-time">📅 2026-04-16 14:30</span>
+                <span class="order-status status-pending">待支付</span>
+            </div>
+            <div class="order-body">
+                <div class="order-image">🏠</div>
+                <div class="order-info">
+                    <div class="order-title">家庭保洁服务</div>
+                    <div class="order-meta">📍 朝阳区建国路88号3单元501室</div>
+                    <div class="order-meta">🕐 2026-04-18 10:00-12:00</div>
+                </div>
+                <div class="order-price">
+                    <div class="price-label">应付金额</div>
+                    <div class="price-value">¥120</div>
+                </div>
+            </div>
+            <div class="order-footer">
+                <span class="order-id">订单号：#SVC2026041601</span>
+                <div class="order-actions">
+                    <button class="btn-cancel">取消订单</button>
+                    <button class="btn-pay">立即支付</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单2：进行中 -->
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-time">📅 2026-04-15 09:00</span>
+                <span class="order-status status-processing">服务中</span>
+            </div>
+            <div class="order-body">
+                <div class="order-image">🛠️</div>
+                <div class="order-info">
+                    <div class="order-title">日常维修 - 水管检修</div>
+                    <div class="order-meta">📍 海淀区中关村大街12号2楼</div>
+                    <div class="order-meta">🕐 2026-04-16 15:00-17:00</div>
+                </div>
+                <div class="order-price">
+                    <div class="price-label">订单金额</div>
+                    <div class="price-value">¥200</div>
+                </div>
+            </div>
+            <div class="order-footer">
+                <span class="order-id">订单号：#SVC2026041502</span>
+                <div class="order-actions">
+                    <button class="btn-detail">查看详情</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单3：已完成 -->
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-time">📅 2026-04-12 10:00</span>
+                <span class="order-status status-completed">已完成</span>
+            </div>
+            <div class="order-body">
+                <div class="order-image">🧹</div>
+                <div class="order-info">
+                    <div class="order-title">深度保洁服务</div>
+                    <div class="order-meta">📍 东城区东直门外大街46号</div>
+                    <div class="order-meta">🕐 2026-04-14 09:00-12:00</div>
+                </div>
+                <div class="order-price">
+                    <div class="price-label">实付金额</div>
+                    <div class="price-value">¥280</div>
+                </div>
+            </div>
+            <div class="order-footer">
+                <span class="order-id">订单号：#SVC2026041203</span>
+                <div class="order-actions">
+                    <button class="btn-detail">查看详情</button>
+                    <button class="btn-detail" style="color:#FFA500; border-color:#FFA500;">评价</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单4：已完成 -->
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-time">📅 2026-04-10 16:20</span>
+                <span class="order-status status-completed">已完成</span>
+            </div>
+            <div class="order-body">
+                <div class="order-image">🏠</div>
+                <div class="order-info">
+                    <div class="order-title">房源预约看房 - 阳光充足主卧</div>
+                    <div class="order-meta">📍 朝阳区望京SOHO T3 1802室</div>
+                    <div class="order-meta">🕐 2026-04-11 14:00</div>
+                </div>
+                <div class="order-price">
+                    <div class="price-label">预约押金</div>
+                    <div class="price-value">¥50</div>
+                </div>
+            </div>
+            <div class="order-footer">
+                <span class="order-id">订单号：#VIEW2026041001</span>
+                <div class="order-actions">
+                    <button class="btn-detail">查看详情</button>
+                    <button class="btn-detail" style="color:#FFA500; border-color:#FFA500;">评价</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单5：已取消 -->
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-time">📅 2026-04-08 11:00</span>
+                <span class="order-status status-cancelled">已取消</span>
+            </div>
+            <div class="order-body">
+                <div class="order-image">📦</div>
+                <div class="order-info">
+                    <div class="order-title">本地商城订单 - 办公桌椅套装</div>
+                    <div class="order-meta">📦 数量：1套 | 规格：1.4m标准款</div>
+                    <div class="order-meta">🕐 下单时间：2026-04-08 11:05</div>
+                </div>
+                <div class="order-price">
+                    <div class="price-label">订单金额</div>
+                    <div class="price-value">¥680</div>
+                </div>
+            </div>
+            <div class="order-footer">
+                <span class="order-id">订单号：#BUY2026040801</span>
+                <div class="order-actions">
+                    <button class="btn-detail">查看详情</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination">
+            <a href="#" class="page-btn">«</a>
+            <a href="#" class="page-btn active">1</a>
+            <a href="#" class="page-btn">2</a>
+            <a href="#" class="page-btn">3</a>
+            <a href="#" class="page-btn">»</a>
+        </div>
+    </div>
+
+    <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>© 2026 居服通 Home Care Connect. All rights reserved.</p>
+    </footer>
+</body>
+</html>

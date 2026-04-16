@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房源详情 - 居服通</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        /* 顶部导航栏 */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C7BE5;
+            margin-right: 50px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+        }
+        .nav-item {
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .nav-item:hover {
+            background-color: #f0f7ff;
+            color: #2C7BE5;
+        }
+        .nav-right {
+            display: flex;
+            gap: 15px;
+        }
+        .btn-login {
+            padding: 8px 24px;
+            border: 1px solid #2C7BE5;
+            color: #2C7BE5;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .btn-login:hover {
+            background-color: #2C7BE5;
+            color: #fff;
+        }
+        /* 主内容区 */
+        .main-content {
+            margin-top: 60px;
+            padding: 20px 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* 面包屑导航 */
+        .breadcrumb {
+            padding: 15px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .breadcrumb a {
+            color: #2C7BE5;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        /* 房源详情容器 */
+        .detail-container {
+            display: flex;
+            gap: 20px;
+        }
+        /* 左侧内容 */
+        .detail-left {
+            flex: 1;
+        }
+        /* 图片展示区 */
+        .image-gallery {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .main-image {
+            width: 100%;
+            height: 500px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .thumbnail-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .thumbnail {
+            height: 100px;
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .thumbnail:hover {
+            border-color: #2C7BE5;
+        }
+        /* 房源基本信息 */
+        .property-info-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .property-title-detail {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .property-price-detail {
+            font-size: 36px;
+            color: #FFA500;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .price-unit {
+            font-size: 18px;
+            color: #999;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px 0;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            text-align: center;
+        }
+        .info-label {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .info-value {
+            color: #333;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .property-tags-detail {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            background-color: #f0f7ff;
+            color: #2C7BE5;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        /* 房源描述 */
+        .description-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .description-text {
+            line-height: 1.8;
+            color: #666;
+            font-size: 15px;
+        }
+        /* 配套设施 */
+        .facilities-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        .facility-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        .facility-icon {
+            font-size: 24px;
+        }
+        .facility-name {
+            font-size: 14px;
+            color: #333;
+        }
+        /* 位置信息 */
+        .location-map {
+            width: 100%;
+            height: 300px;
+            background-color: #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 16px;
+        }
+        /* 右侧预约卡片 */
+        .booking-sidebar {
+            width: 360px;
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+        }
+        .booking-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .manager-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .manager-avatar {
+            width: 60px;
+            height: 60px;
+            background-color: #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .manager-details {
+            flex: 1;
+        }
+        .manager-name {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .manager-role {
+            font-size: 13px;
+            color: #999;
+        }
+        .booking-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .form-input {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        .form-input:focus {
+            border-color: #2C7BE5;
+        }
+        .btn-booking-large {
+            padding: 15px;
+            background-color: #FFA500;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-booking-large:hover {
+            background-color: #ff8c00;
+        }
+        .btn-contact {
+            padding: 15px;
+            background-color: #fff;
+            color: #2C7BE5;
+            border: 1px solid #2C7BE5;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-contact:hover {
+            background-color: #f0f7ff;
+        }
+        /* 相关推荐 */
+        .related-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .related-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        .related-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .related-item:last-child {
+            border-bottom: none;
+        }
+        .related-image {
+            width: 80px;
+            height: 60px;
+            background-color: #e0e0e0;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .related-info {
+            flex: 1;
+        }
+        .related-name {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .related-price {
+            font-size: 16px;
+            color: #FFA500;
+            font-weight: 500;
+        }
+        /* AI助手 */
+        .ai-assistant {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        .ai-assistant:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .ai-icon {
+            font-size: 28px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar">
+        <div class="logo">🏠 居服通</div>
+        <div class="nav-menu">
+            <a href="01-home.html" class="nav-item">首页</a>
+            <a href="02-property-list.html" class="nav-item" style="background-color: #f0f7ff; color: #2C7BE5;">房源</a>
+            <a href="04-service-list.html" class="nav-item">服务</a>
+            <a href="01-purchase.html" class="nav-item">本地商城</a>
+            <a href="02-secondhand.html" class="nav-item">跳蚤市场</a>
+        </div>
+        <div class="nav-right">
+            <a href="#" class="btn-login">登录</a>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="01-home.html">首页</a> / <a href="02-property-list.html">房源列表</a> / 房源详情
+        </div>
+
+        <!-- 房源详情容器 -->
+        <div class="detail-container">
+            <!-- 左侧内容 -->
+            <div class="detail-left">
+                <!-- 图片展示区 -->
+                <div class="image-gallery">
+                    <div class="main-image">主图片展示区域</div>
+                    <div class="thumbnail-list">
+                        <div class="thumbnail">缩略图1</div>
+                        <div class="thumbnail">缩略图2</div>
+                        <div class="thumbnail">缩略图3</div>
+                        <div class="thumbnail">缩略图4</div>
+                        <div class="thumbnail">缩略图5</div>
+                    </div>
+                </div>
+
+                <!-- 房源基本信息 -->
+                <div class="property-info-card">
+                    <div class="property-title-detail">地铁口精装公寓 采光好 拎包入住</div>
+                    <div class="property-price-detail">¥2,500<span class="price-unit">/月</span></div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">面积</div>
+                            <div class="info-value">45㎡</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">楼层</div>
+                            <div class="info-value">5/12层</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">朝向</div>
+                            <div class="info-value">朝南</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">房型</div>
+                            <div class="info-value">整租公寓</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">装修</div>
+                            <div class="info-value">精装修</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">状态</div>
+                            <div class="info-value" style="color: #52c41a;">空置</div>
+                        </div>
+                    </div>
+
+                    <div class="property-tags-detail">
+                        <span class="tag">🌡️ 空调</span>
+                        <span class="tag">🚿 热水器</span>
+                        <span class="tag">👕 洗衣机</span>
+                        <span class="tag">❄️ 冰箱</span>
+                        <span class="tag">📺 电视</span>
+                        <span class="tag">🛏️ 床</span>
+                        <span class="tag">🪑 家具齐全</span>
+                        <span class="tag">🚇 近地铁</span>
+                    </div>
+                </div>
+
+                <!-- 房源描述 -->
+                <div class="description-card">
+                    <div class="card-title">📝 房源描述</div>
+                    <div class="description-text">
+                        <p style="margin-bottom: 15px;">
+                            这是一套位于朝阳区建国路的精装公寓，地理位置优越，距离地铁1号线仅500米，步行5分钟即可到达。周边配套设施齐全，超市、餐饮、银行等生活设施一应俱全。
+                        </p>
+                        <p style="margin-bottom: 15px;">
+                            房屋采光极佳，朝南户型，全天阳光充足。室内精装修，家电家具齐全，拎包即可入住。房间宽敞明亮，布局合理，适合单身白领或小两口居住。
+                        </p>
+                        <p>
+                            小区环境优美，物业管理规范，24小时安保，居住安全有保障。欢迎随时预约看房！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 配套设施 -->
+                <div class="description-card">
+                    <div class="card-title">🏡 配套设施</div>
+                    <div class="facilities-grid">
+                        <div class="facility-item">
+                            <div class="facility-icon">🌡️</div>
+                            <div class="facility-name">空调</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">🚿</div>
+                            <div class="facility-name">热水器</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">👕</div>
+                            <div class="facility-name">洗衣机</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">❄️</div>
+                            <div class="facility-name">冰箱</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">📺</div>
+                            <div class="facility-name">电视</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">🛏️</div>
+                            <div class="facility-name">床</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">🪑</div>
+                            <div class="facility-name">桌椅</div>
+                        </div>
+                        <div class="facility-item">
+                            <div class="facility-icon">🌐</div>
+                            <div class="facility-name">宽带</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 位置信息 -->
+                <div class="description-card">
+                    <div class="card-title">📍 位置信息</div>
+                    <p style="margin-bottom: 15px; color: #666;">朝阳区建国路88号 · 距离地铁1号线500米</p>
+                    <div class="location-map">地图展示区域（接入地图API）</div>
+                </div>
+            </div>
+
+            <!-- 右侧预约卡片 -->
+            <div class="booking-sidebar">
+                <!-- 预约看房卡片 -->
+                <div class="booking-card">
+                    <div class="manager-info">
+                        <div class="manager-avatar">👤</div>
+                        <div class="manager-details">
+                            <div class="manager-name">张经理</div>
+                            <div class="manager-role">房源管家 · 5年经验</div>
+                        </div>
+                    </div>
+
+                    <div class="booking-form">
+                        <div class="form-group">
+                            <label class="form-label">您的姓名</label>
+                            <input type="text" class="form-input" placeholder="请输入您的姓名">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">联系电话</label>
+                            <input type="tel" class="form-input" placeholder="请输入您的手机号">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">预约时间</label>
+                            <input type="datetime-local" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">备注信息</label>
+                            <textarea class="form-input" rows="3" placeholder="请输入您的需求或问题"></textarea>
+                        </div>
+                        <button class="btn-booking-large">立即预约看房</button>
+                        <button class="btn-contact">联系房源管家</button>
+                    </div>
+                </div>
+
+                <!-- 相关推荐 -->
+                <div class="related-card">
+                    <div class="related-title">🔥 相关推荐</div>
+                    <div class="related-item">
+                        <div class="related-image"></div>
+                        <div class="related-info">
+                            <div class="related-name">阳光充足主卧</div>
+                            <div class="related-price">¥1,800/月</div>
+                        </div>
+                    </div>
+                    <div class="related-item">
+                        <div class="related-image"></div>
+                        <div class="related-info">
+                            <div class="related-name">温馨一居室</div>
+                            <div class="related-price">¥1,950/月</div>
+                        </div>
+                    </div>
+                    <div class="related-item">
+                        <div class="related-image"></div>
+                        <div class="related-info">
+                            <div class="related-name">商圈核心位置</div>
+                            <div class="related-price">¥1,600/月</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
+</body>
+</html>

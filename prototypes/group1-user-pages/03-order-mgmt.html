@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 居服通管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background-color: #f0f2f5; color: #333; }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%); color: #fff; position: fixed; height: 100vh; display: flex; flex-direction: column; }
+        .sidebar-logo { padding: 25px 20px; font-size: 22px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-nav { flex: 1; padding: 20px 0; }
+        .nav-title { padding: 10px 20px; font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
+        .nav-item { display: flex; align-items: center; padding: 12px 20px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 15px; transition: all 0.3s; gap: 12px; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; padding-left: 25px; }
+        .nav-item.active { background: rgba(44,123,229,0.3); border-left: 3px solid #2C7BE5; color: #fff; }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+        .nav-badge { margin-left: auto; background: #ff4d4f; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .sidebar-user { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; }
+        .user-name { font-size: 14px; color: #fff; font-weight: 500; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .main-content { margin-left: 240px; flex: 1; }
+        .topbar { background: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 100; }
+        .topbar-title { font-size: 20px; font-weight: 600; }
+        .topbar-breadcrumb { font-size: 14px; color: #999; margin-top: 3px; }
+        .topbar-actions { display: flex; align-items: center; gap: 15px; }
+        .topbar-btn { padding: 8px 16px; background: #2C7BE5; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
+        .topbar-btn:hover { background: #1a6ad8; }
+        .content { padding: 25px 30px; }
+        /* 统计卡片 */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .stat-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; color: #999; }
+        .stat-icon { font-size: 32px; margin-bottom: 10px; }
+        /* 工具栏 */
+        .toolbar { background: #fff; border-radius: 12px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .toolbar-search { flex: 1; min-width: 200px; display: flex; gap: 10px; }
+        .search-input { flex: 1; padding: 10px 15px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; outline: none; }
+        .search-input:focus { border-color: #2C7BE5; }
+        .toolbar-select { padding: 10px 15px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; outline: none; }
+        /* 表格 */
+        .table-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 14px 18px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .table th { background: #f8f9fa; font-weight: 600; color: #666; }
+        .table tr:hover td { background: #fafafa; }
+        .table tr:last-child td { border-bottom: none; }
+        .order-type { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .type-service { background: #e8f5e9; color: #4caf50; }
+        .type-rental { background: #e3f2fd; color: #2C7BE5; }
+        .type-purchase { background: #fff3e0; color: #ff9800; }
+        .price { font-weight: bold; color: #FFA500; }
+        .status-tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+        .status-pending { background: #fff3e0; color: #ff9800; }
+        .status-paid { background: #e3f2fd; color: #2C7BE5; }
+        .status-completed { background: #e8f5e9; color: #4caf50; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        .action-btn { padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: none; transition: all 0.3s; margin-right: 3px; }
+        .action-view { background: #f0f7ff; color: #2C7BE5; }
+        .action-view:hover { background: #e0f0ff; }
+        .action-process { background: #fff3e0; color: #ff9800; }
+        .action-process:hover { background: #ffe0b2; }
+        /* 分页 */
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; }
+        .pagination-info { font-size: 14px; color: #999; }
+        .pagination-btns { display: flex; gap: 8px; }
+        .page-btn { padding: 6px 14px; border: 1px solid #e0e0e0; background: #fff; border-radius: 4px; font-size: 14px; cursor: pointer; color: #666; text-decoration: none; transition: all 0.3s; }
+        .page-btn:hover { border-color: #2C7BE5; color: #2C7BE5; }
+        .page-btn.active { background: #2C7BE5; color: #fff; border-color: #2C7BE5; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">🏠 居服通 · 店长后台</div>
+            <nav class="sidebar-nav">
+                <div class="nav-title">📊 运营中心</div>
+                <a href="01-dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>数据看板
+                </a>
+                <a href="02-property-mgmt.html" class="nav-item">
+                    <span class="nav-icon">🏘️</span>房源管理
+                </a>
+                <a href="03-order-mgmt.html" class="nav-item active">
+                    <span class="nav-icon">📋</span>订单管理
+                    <span class="nav-badge">8</span>
+                </a>
+                <a href="04-service-mgmt.html" class="nav-item">
+                    <span class="nav-icon">🛠️</span>服务管理
+                </a>
+                <div class="nav-title">👥 人员管理</div>
+                <a href="05-staff-mgmt.html" class="nav-item">
+                    <span class="nav-icon">👥</span>员工管理
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">💰</span>佣金管理
+                </a>
+                <div class="nav-title">⚙️ 系统</div>
+                <a href="#" class="nav-item">
+                    <span class="nav-icon">⚙️</span>系统设置
+                </a>
+            </nav>
+            <div class="sidebar-user">
+                <div class="user-avatar">王</div>
+                <div class="user-info">
+                    <div class="user-name">王店长</div>
+                    <div class="user-role">超级管理员</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧内容区 -->
+        <div class="main-content">
+            <header class="topbar">
+                <div>
+                    <div class="topbar-title">📋 订单管理</div>
+                    <div class="topbar-breadcrumb">首页 / 运营中心 / 订单管理</div>
+                </div>
+                <div class="topbar-actions">
+                    <button class="topbar-btn">📤 批量导出</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <!-- 统计卡片 -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-value">3,542</div>
+                        <div class="stat-label">总订单数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-value">28</div>
+                        <div class="stat-label">待处理</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">进行中</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value">¥528,420</div>
+                        <div class="stat-label">本月收入</div>
+                    </div>
+                </div>
+
+                <!-- 工具栏 -->
+                <div class="toolbar">
+                    <div class="toolbar-search">
+                        <input type="text" class="search-input" placeholder="🔍 搜索订单号、用户...">
+                        <button class="topbar-btn" style="position:static;">搜索</button>
+                    </div>
+                    <select class="toolbar-select">
+                        <option>全部类型</option>
+                        <option>服务订单</option>
+                        <option>租房订单</option>
+                        <option>本地商城订单</option>
+                    </select>
+                    <select class="toolbar-select">
+                        <option>全部状态</option>
+                        <option>待支付</option>
+                        <option>已支付</option>
+                        <option>进行中</option>
+                        <option>已完成</option>
+                        <option>已取消</option>
+                    </select>
+                    <input type="date" class="toolbar-select" style="min-width:140px;">
+                </div>
+
+                <!-- 表格 -->
+                <div class="table-card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>订单编号</th>
+                                <th>类型</th>
+                                <th>用户</th>
+                                <th>服务/房源</th>
+                                <th>金额</th>
+                                <th>状态</th>
+                                <th>下单时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#SVC2026041601</td>
+                                <td><span class="order-type type-service">🛠️ 服务</span></td>
+                                <td>王小虎</td>
+                                <td>家庭保洁</td>
+                                <td class="price">¥120</td>
+                                <td><span class="status-tag status-pending">待支付</span></td>
+                                <td>2026-04-16 14:30</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                    <button class="action-btn action-process">处理</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#SVC2026041502</td>
+                                <td><span class="order-type type-service">🛠️ 服务</span></td>
+                                <td>李小花</td>
+                                <td>日常维修 - 水管</td>
+                                <td class="price">¥200</td>
+                                <td><span class="status-tag status-paid">已支付</span></td>
+                                <td>2026-04-15 09:00</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                    <button class="action-btn action-process">处理</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#RNT2026041501</td>
+                                <td><span class="order-type type-rental">🏠 租房</span></td>
+                                <td>张大力</td>
+                                <td>阳光充足主卧</td>
+                                <td class="price">¥1,800</td>
+                                <td><span class="status-tag status-paid">已支付</span></td>
+                                <td>2026-04-15 11:20</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#BUY2026041401</td>
+                                <td><span class="order-type type-purchase">📦 本地商城</span></td>
+                                <td>陈美美</td>
+                                <td>办公桌椅套装</td>
+                                <td class="price">¥680</td>
+                                <td><span class="status-tag status-cancelled">已取消</span></td>
+                                <td>2026-04-14 16:00</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#SVC2026041402</td>
+                                <td><span class="order-type type-service">🛠️ 服务</span></td>
+                                <td>刘强壮</td>
+                                <td>深度保洁</td>
+                                <td class="price">¥280</td>
+                                <td><span class="status-tag status-completed">已完成</span></td>
+                                <td>2026-04-14 10:00</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#SVC2026041301</td>
+                                <td><span class="order-type type-service">🛠️ 服务</span></td>
+                                <td>赵丽丽</td>
+                                <td>空调清洗</td>
+                                <td class="price">¥150</td>
+                                <td><span class="status-tag status-completed">已完成</span></td>
+                                <td>2026-04-13 15:45</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#RNT2026041201</td>
+                                <td><span class="order-type type-rental">🏠 租房</span></td>
+                                <td>孙浩然</td>
+                                <td>温馨一居室</td>
+                                <td class="price">¥3,200</td>
+                                <td><span class="status-tag status-completed">已完成</span></td>
+                                <td>2026-04-12 09:30</td>
+                                <td>
+                                    <button class="action-btn action-view">查看</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="pagination">
+                        <div class="pagination-info">共 3,542 条记录，第 1/295 页</div>
+                        <div class="pagination-btns">
+                            <a href="#" class="page-btn">«</a>
+                            <a href="#" class="page-btn active">1</a>
+                            <a href="#" class="page-btn">2</a>
+                            <a href="#" class="page-btn">3</a>
+                            <a href="#" class="page-btn">...</a>
+                            <a href="#" class="page-btn">295</a>
+                            <a href="#" class="page-btn">»</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
