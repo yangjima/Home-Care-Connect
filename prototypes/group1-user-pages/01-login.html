@@ -69,6 +69,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            overflow: hidden;
         }
         .login-logo {
             font-size: 28px;
@@ -108,7 +109,7 @@
         }
         /* 表单 */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         .form-label {
             display: block;
@@ -192,49 +193,6 @@
             background: #ff8c00;
             box-shadow: 0 4px 12px rgba(255,165,0,0.3);
         }
-        .third-party-login {
-            margin-top: 30px;
-            text-align: center;
-        }
-        .third-party-title {
-            font-size: 14px;
-            color: #999;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .third-party-title::before,
-        .third-party-title::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 35%;
-            height: 1px;
-            background: #e0e0e0;
-        }
-        .third-party-title::before { left: 0; }
-        .third-party-title::after { right: 0; }
-        .third-party-btns {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .third-party-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 24px;
-            transition: all 0.3s;
-            border: 1px solid #e0e0e0;
-            background: #fff;
-        }
-        .third-party-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
         .footer-links {
             margin-top: 25px;
             text-align: center;
@@ -258,6 +216,39 @@
             color: #2C7BE5;
             text-decoration: none;
         }
+        .captcha-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .captcha-input {
+            flex: 1;
+        }
+        .captcha-canvas {
+            width: 120px;
+            height: 40px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .captcha-canvas:hover {
+            border-color: #2C7BE5;
+            box-shadow: 0 2px 8px rgba(44,123,229,0.2);
+        }
+        .password-strength {
+            margin-top: 8px;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        .strength-text {
+            font-weight: 500;
+        }
+        .strength-weak { color: #ff4d4f; }
+        .strength-medium { color: #faad14; }
+        .strength-strong { color: #52c41a; }
         .tab-content {
             display: none;
         }
