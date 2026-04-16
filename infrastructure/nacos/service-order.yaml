@@ -1,0 +1,26 @@
+# ============================================================
+# Nacos - service-order.yaml
+# 服务订单服务配置
+# ============================================================
+
+spring:
+  application:
+    name: service-order
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/homecare?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${MYSQL_PASSWORD:HomeCare2026@DB}
+
+server:
+  port: 8083
+
+dubbo:
+  protocol:
+    port: 20883
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000

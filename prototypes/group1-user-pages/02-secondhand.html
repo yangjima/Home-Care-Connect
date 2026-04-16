@@ -83,7 +83,7 @@
             color: #fff;
         }
         /* 内容区 */
-        .content { max-width: 1200px; margin: 0 auto; padding: 25px 20px; }
+        .content { max-width: 1200px; margin: 0 auto; padding: 65px 20px; }
         /* 分类Tab */
         .tab-bar { background: #fff; border-radius: 12px; padding: 0; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; overflow: hidden; }
         .tab-item { flex: 1; padding: 14px; text-align: center; font-size: 14px; color: #666; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; }
@@ -116,9 +116,31 @@
         /* 新发布浮动按钮 */
         .float-publish { position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; background: linear-gradient(135deg, #ff9800, #ff5722); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(255,152,0,0.4); transition: all 0.3s; z-index: 200; }
         .float-publish:hover { transform: scale(1.1); }
-        /* AI悬浮按钮 */
-        .ai-btn { position: fixed; bottom: 100px; right: 30px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(102,126,234,0.4); transition: all 0.3s; z-index: 200; }
-        .ai-btn:hover { transform: scale(1.1); }
+        /* AI助手悬浮按钮 */
+        .ai-assistant {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+        .ai-assistant:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .ai-icon {
+            font-size: 28px;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -137,13 +159,8 @@
         </div>
     </nav>
 
-    <!-- 搜索区域 -->
-    <div class="search-section">
-        <input type="text" class="search-section-input" placeholder="🔍 搜索跳蚤市场商品...">
-    </div>
-
     <!-- 主内容区 -->
-    <div class="content" style="margin-top: 10px;">
+    <div class="content">
         <!-- 分类Tab -->
         <div class="tab-bar">
             <div class="tab-item active">🏠 全部</div>
@@ -155,10 +172,13 @@
             <div class="tab-item">🌱 绿植宠物</div>
         </div>
 
-        <!-- 发布信息 -->
-        <div class="publish-bar">
+        <!-- 搜索区域 -->
+        <div class="publish-bar" style="margin-bottom: 15px;">
             <div class="publish-info">当前共有 <span>1,286</span> 件跳蚤市场物品在售 · <span>本周新增 42</span> 件</div>
             <button class="btn-publish">➕ 发布闲置</button>
+        </div>
+        <div class="search-section" style="margin-bottom: 20px; padding: 10px 15px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <input type="text" class="search-section-input" style="border-radius: 8px; max-width: none;" placeholder="🔍 搜索跳蚤市场商品...">
         </div>
 
         <!-- 商品瀑布流 -->
@@ -322,10 +342,10 @@
         </div>
     </div>
 
-    <!-- AI悬浮按钮 -->
-    <a href="03-ai-chat.html" class="ai-btn">🤖</a>
+        <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
 
-    <!-- 发布闲置按钮 -->
-    <div class="float-publish">➕</div>
 </body>
 </html>

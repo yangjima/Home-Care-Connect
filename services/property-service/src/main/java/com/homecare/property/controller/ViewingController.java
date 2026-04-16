@@ -1,0 +1,92 @@
+package com.homecare.property.controller;
+
+import com.homecare.property.common.PageResult;
+import com.homecare.property.common.Result;
+import com.homecare.property.dto.ViewingRequest;
+import com.homecare.property.dto.ViewingResponse;
+import com.homecare.property.service.PropertyService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 预约看房控制器
+ */
+@RestController
+@RequestMapping("/viewings")
+@RequiredArgsConstructor
+public class ViewingController {
+
+    private final PropertyService propertyService;
+
+    /**
+     * 预约看房
+     */
+    @PostMapping
+    public Result<ViewingResponse> createViewing(
+            @Valid @RequestBody ViewingRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        ViewingResponse response = propertyService.createViewing(request, userId);
+        return Result.success("预约成功", response);
+    }
+
+    /**
+     * 获取预约详情
+     */
+    @GetMapping("/{id}")
+    public Result<ViewingResponse> getViewingById(@PathVariable Long id) {
+        ViewingResponse response = propertyService.getViewingById(id);
+        return Result.success(response);
+    }
+
+    /**
+     * 确认预约
+     */
+    @PostMapping("/{id}/confirm")
+    public Result<ViewingResponse> confirmViewing(@PathVariable Long id) {
+        ViewingResponse response = propertyService.confirmViewing(id);
+        return Result.success("确认成功", response);
+    }
+
+    /**
+     * 取消预约
+     */
+    @PostMapping("/{id}/cancel")
+    public Result<ViewingResponse> cancelViewing(@PathVariable Long id) {
+        ViewingResponse response = propertyService.cancelViewing(id);
+        return Result.success("取消成功", response);
+    }
+
+    /**
+     * 完成看房
+     */
+    @PostMapping("/{id}/complete")
+    public Result<ViewingResponse> completeViewing(@PathVariable Long id) {
+        ViewingResponse response = propertyService.completeViewing(id);
+        return Result.success("已完成", response);
+    }
+
+    /**
+     * 分页查询预约列表
+     */
+    @GetMapping
+    public Result<PageResult<ViewingResponse>> listViewings(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) Long propertyId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String status) {
+        var result = propertyService.listViewings(page, pageSize, propertyId, userId, status);
+        return Result.success(result);
+    }
+
+    private Long getUserId(HttpServletRequest request) {
+        Object userId = request.getAttribute("userId");
+        if (userId == null) {
+            return 1L;
+        }
+        return (Long) userId;
+    }
+}

@@ -1,0 +1,79 @@
+# ============================================================
+# Nacos - gateway.yaml
+# API Gateway 配置
+# ============================================================
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+
+        - id: property-service
+          uri: lb://property-service
+          predicates:
+            - Path=/api/property/**
+          filters:
+            - StripPrefix=1
+
+        - id: service-order
+          uri: lb://service-order
+          predicates:
+            - Path=/api/service/**
+          filters:
+            - StripPrefix=1
+
+        - id: asset-service
+          uri: lb://asset-service
+          predicates:
+            - Path=/api/asset/**
+          filters:
+            - StripPrefix=1
+
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/ai/**
+          filters:
+            - StripPrefix=1
+
+        - id: minio-api
+          uri: lb://minio
+          predicates:
+            - Path=/api/minio/**
+          filters:
+            - StripPrefix=1
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

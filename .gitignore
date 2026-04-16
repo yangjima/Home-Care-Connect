@@ -1,0 +1,51 @@
+# 环境变量（不提交 git）
+.env
+
+# Java 编译产物
+services/*/target/
+services/*/.mvn/wrapper/
+services/*/.m2/
+
+# Python 虚拟环境和缓存
+services/ai-service/__pycache__/
+services/ai-service/.venv/
+services/ai-service/*.pyc
+services/ai-service/.env
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+frontend/.DS_Store
+frontend/.env.local
+frontend/.env.production
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Docker 数据卷
+docker/volumes/
+
+# 日志
+*.log
+logs/
+
+# 其他
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Nacos 数据（本地开发）
+infrastructure/nacos/data/
+infrastructure/nacos/logs/
+
+# MinIO 数据
+minio-data/
+
+# 敏感文件
+infrastructure/docker/.env
+credentials.json

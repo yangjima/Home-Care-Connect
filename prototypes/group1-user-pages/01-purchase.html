@@ -121,9 +121,109 @@
         .float-cart { position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(102,126,234,0.4); transition: all 0.3s; }
         .float-cart:hover { transform: scale(1.1); }
         .float-cart-badge { position: absolute; top: -2px; right: -2px; background: #ff4d4f; color: #fff; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
-        /* AI悬浮按钮 */
-        .ai-btn { position: fixed; bottom: 100px; right: 30px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(102,126,234,0.4); transition: all 0.3s; z-index: 200; }
-        .ai-btn:hover { transform: scale(1.1); }
+        .banner-search-box {
+            flex: 1;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .banner-search-title {
+            color: rgba(255,255,255,0.95);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .banner-search-title::before {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 14px;
+            background: #fff;
+            border-radius: 2px;
+        }
+        .banner-search-form {
+            display: flex;
+            background: rgba(255,255,255,0.95);
+            border-radius: 50px;
+            padding: 5px 5px 5px 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.5);
+            backdrop-filter: blur(10px);
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .banner-search-form:focus-within {
+            box-shadow: 0 6px 30px rgba(44,123,229,0.3), 0 0 0 2px rgba(44,123,229,0.4);
+            transform: translateY(-1px);
+        }
+        .banner-search-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #764ba2;
+            font-size: 18px;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .banner-search-input {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #333;
+            background: transparent;
+        }
+        .banner-search-input::placeholder {
+            color: #aaa;
+        }
+        .banner-search-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .banner-search-btn:hover {
+            background: linear-gradient(135deg, #5a6fd6, #6a4090);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+            transform: translateX(2px);
+        }
+        .banner-hot-search {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 0 4px;
+        }
+        .hot-tag {
+            padding: 3px 10px;
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.85);
+            border-radius: 50px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        .hot-tag:hover {
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+        .hot-tag:first-child {
+            background: rgba(255,77,79,0.3);
+            border-color: rgba(255,77,79,0.5);
+            color: #fff;
+        }
+        /* AI助手悬浮按钮 */
+        .ai-assistant { position: fixed; bottom: 100px; right: 30px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; box-shadow: 0 4px 16px rgba(102,126,234,0.4); transition: all 0.3s; z-index: 200; }
+        .ai-assistant:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
@@ -143,12 +243,9 @@
     </nav>
 
     <!-- 搜索区域 -->
-    <div class="search-section">
-        <input type="text" class="search-section-input" placeholder="🔍 搜索本地商城商品...">
-    </div>
 
     <!-- 主内容区 -->
-    <div class="content" style="margin-top: 10px;">
+    <div class="content" style="margin-top: 50px;">
         <!-- 横幅 -->
         <div class="banner">
             <div class="banner-text">
@@ -157,6 +254,20 @@
                 <button class="banner-btn">查看商城指南 →</button>
             </div>
             <div class="banner-img">🛒</div>
+            <div class="banner-search-box">
+                <div class="banner-search-title">🔍 搜索商品</div>
+                <div class="banner-search-form">
+                    <span class="banner-search-icon">⌕</span>
+                    <input type="text" class="banner-search-input" placeholder="搜索办公用品、清洁用品...">
+                    <button class="banner-search-btn">搜索</button>
+                </div>
+                <div class="banner-hot-search">
+                    <span class="hot-tag">🔥 销量优先</span>
+                    <span class="hot-tag">办公用品</span>
+                    <span class="hot-tag">清洁用品</span>
+                    <span class="hot-tag">维修工具</span>
+                </div>
+            </div>
         </div>
 
         <!-- 分类 -->
@@ -313,8 +424,10 @@
         </div>
     </div>
 
-    <!-- AI悬浮按钮 -->
-    <a href="03-ai-chat.html" class="ai-btn">🤖</a>
+        <!-- AI助手悬浮按钮 -->
+    <div class="ai-assistant" title="AI助手">
+        <div class="ai-icon">💬</div>
+    </div>
 
     <!-- 浮动购物车 -->
     <div class="float-cart">🛒<span class="float-cart-badge">3</span></div>

@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    gateway:
+      routes: []
+
+nacos:
+  discovery:
+    enabled: false
+  config:
+    enabled: false
+
+jwt:
+  secret: HomeCareConnectSecretKeyForJWT2024VeryLongStringThatIsAtLeast256Bits
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+
+logging:
+  level:
+    com.homecare.gateway: DEBUG

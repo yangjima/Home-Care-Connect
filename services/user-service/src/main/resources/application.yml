@@ -1,0 +1,75 @@
+# ============================================================
+# Spring Boot 应用配置
+# ============================================================
+
+spring:
+  application:
+    name: user-service
+
+  # 数据源配置（由 Nacos shared.yaml 提供默认值）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis 配置（由 Nacos shared.yaml 提供默认值）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:HomeCare2026@Redis}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+  # Cloud Nacos Config
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_HOST:localhost}:8848
+        file-extension: yaml
+        shared-configs:
+          - data-id: shared.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+      discovery:
+        server-addr: ${NACOS_HOST:localhost}:8848
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.homecare.user.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 服务端口
+server:
+  port: 8081
+
+# 日志配置
+logging:
+  level:
+    com.homecare.user: DEBUG
+    com.homecare.common: DEBUG
+
+# Actuator 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  health:
+    discovery-client:
+      enabled: true

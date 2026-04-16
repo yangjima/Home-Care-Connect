@@ -1,0 +1,55 @@
+# ============================================================
+# .dockerignore - 排除不需要复制到 Docker 构建上下文的内容
+# ============================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# Build artifacts
+target/
+dist/
+build/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+logs/
+
+# Test
+**/test/
+**/tests/
+*.test.*
+*.spec.*
+
+# Environment files (包含敏感信息)
+.env
+.env.*
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Node (前端专用)
+node_modules/
+npm-debug.log*
+yarn-debug.log*

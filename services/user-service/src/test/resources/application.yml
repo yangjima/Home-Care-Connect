@@ -1,0 +1,43 @@
+# ============================================================
+# 测试配置
+# ============================================================
+
+spring:
+  application:
+    name: user-service-test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: never
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    nacos:
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  secret: TestSecretKeyForJWTTokenTesting1234567890ABCDEF
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+  issuer: homecare-test
+
+logging:
+  level:
+    com.homecare.user: DEBUG

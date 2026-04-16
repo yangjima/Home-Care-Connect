@@ -1,0 +1,44 @@
+# ============================================================
+# Nacos - ai-service.yaml
+# AI 服务配置
+# ============================================================
+
+ai:
+  service:
+    name: ai-service
+    port: 8000
+
+  # 阿里云百炼 DashScope
+  dashscope:
+    api-key: ${DASHSCOPE_API_KEY:}
+    model: qwen-plus
+    # 模型调用超时（秒）
+    timeout: 30
+    # 流式输出最大token
+    max-tokens: 2000
+
+  # 后端服务 URL（供 Agent 调用）
+  backend:
+    property-service-url: http://property-service:8082
+    service-order-url: http://service-order:8083
+    asset-service-url: http://asset-service:8084
+
+  # Redis（对话历史持久化）
+  redis:
+    host: ${REDIS_HOST:redis}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:HomeCare2026@Redis}
+    # 对话历史 TTL（秒），30分钟无活动自动清理
+    history-ttl: 1800
+    # 检查点 key 前缀
+    checkpoint-prefix: "ai:checkpoint:"
+    # 历史 key 前缀
+    history-prefix: "ai:history:"
+
+  # LangGraph 检查点配置
+  checkpoint:
+    # 检查点 TTL（秒）
+    ttl: 1800
+
+server:
+  port: 8000

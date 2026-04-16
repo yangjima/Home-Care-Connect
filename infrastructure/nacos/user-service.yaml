@@ -1,0 +1,31 @@
+# ============================================================
+# Nacos - user-service.yaml
+# 用户服务配置
+# ============================================================
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/homecare?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${MYSQL_PASSWORD:HomeCare2026@DB}
+
+server:
+  port: 8081
+
+dubbo:
+  protocol:
+    port: 20881
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+  compression:
+    request:
+      enabled: true
+    response:
+      enabled: true

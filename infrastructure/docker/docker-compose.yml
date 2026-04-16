@@ -1,0 +1,385 @@
+# ============================================================
+# 居服通 Docker Compose 配置 - 完整生产环境
+# 包含：基础设施 + 所有微服务 + 前端
+#
+# 使用方法：
+#   全量启动（推荐）: docker compose -f infrastructure/docker/docker-compose.yml up -d
+#   仅基础设施:      docker compose -f infrastructure/docker/docker-compose.yml up -d infrastructure
+#   仅服务:         docker compose -f infrastructure/docker/docker-compose.yml up -d services
+#   查看日志:       docker compose -f infrastructure/docker/docker-compose.yml logs -f [service]
+#   停止:           docker compose -f infrastructure/docker/docker-compose.yml down
+# ============================================================
+
+services:
+  # ========== 基础设施 (Infrastructure) ==========
+  # ----------------------------------------
+  # MySQL 数据库
+  # ----------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: homecare-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      MYSQL_DATABASE: homecare
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_PASSWORD:-HomeCare2026@DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # Redis 缓存
+  # ----------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: homecare-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-HomeCare2026@Redis}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-HomeCare2026@Redis}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # MinIO 对象存储
+  # ----------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: homecare-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-homecareadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+    ports:
+      - "9000:9000"    # 控制台
+      - "9001:9001"    # API
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9000" --address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # Nacos 服务注册与配置中心
+  # ----------------------------------------
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: homecare-nacos
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: homecare
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+    ports:
+      - "8848:8848"    # Nacos 控制台
+      - "9848:9848"    # gRPC 通信端口
+    volumes:
+      - nacos_data:/home/nacos/data
+      - nacos_logs:/home/nacos/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ========== 微服务 (Microservices) ==========
+  # ----------------------------------------
+  # API 网关
+  # ----------------------------------------
+  gateway:
+    build:
+      context: ../../services/gateway
+      dockerfile: Dockerfile
+    container_name: homecare-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      JWT_SECRET: ${JWT_SECRET:-HomeCareConnect2026SecretKeyForJWT}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+    ports:
+      - "8080:8080"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # 用户服务
+  # ----------------------------------------
+  user-service:
+    build:
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+    container_name: homecare-user-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/homecare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      JWT_SECRET: ${JWT_SECRET:-HomeCareConnect2026SecretKeyForJWT}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      MINIO_ENDPOINT: http://minio:9001
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-homecareadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # 房产服务
+  # ----------------------------------------
+  property-service:
+    build:
+      context: ../../services/property-service
+      dockerfile: Dockerfile
+    container_name: homecare-property-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/homecare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      JWT_SECRET: ${JWT_SECRET:-HomeCareConnect2026SecretKeyForJWT}
+      MINIO_ENDPOINT: http://minio:9001
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-homecareadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # 服务订单服务
+  # ----------------------------------------
+  service-order-service:
+    build:
+      context: ../../services/service-order-service
+      dockerfile: Dockerfile
+    container_name: homecare-service-order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/homecare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      JWT_SECRET: ${JWT_SECRET:-HomeCareConnect2026SecretKeyForJWT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # 资产服务（采购 + 二手）
+  # ----------------------------------------
+  asset-service:
+    build:
+      context: ../../services/asset-service
+      dockerfile: Dockerfile
+    container_name: homecare-asset-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NACOS_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/homecare?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-HomeCare2026@DB}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      JWT_SECRET: ${JWT_SECRET:-HomeCareConnect2026SecretKeyForJWT}
+      MINIO_ENDPOINT: http://minio:9001
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-homecareadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ----------------------------------------
+  # AI 服务（FastAPI + LangGraph）
+  # ----------------------------------------
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    container_name: homecare-ai-service
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      DASHSCOPE_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+      LLM_MODEL: ${LLM_MODEL:-qwen-plus}
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+  # ========== 前端 (Frontend) ==========
+  # ----------------------------------------
+  # 前端 nginx 服务
+  # ----------------------------------------
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_WS_URL: ws://gateway:8080/ws
+        VITE_ENV: production
+    container_name: homecare-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - homecare-net
+
+# ========== 数据卷 ==========
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  nacos_data:
+    driver: local
+  nacos_logs:
+    driver: local
+
+# ========== 网络 ==========
+networks:
+  homecare-net:
+    driver: bridge
