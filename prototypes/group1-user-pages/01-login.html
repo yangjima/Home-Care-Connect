@@ -316,18 +316,18 @@
             <div id="login-form" class="tab-content active">
                 <form>
                     <div class="form-group">
-                        <label class="form-label">邮箱地址<span class="required">*</span></label>
+                        <label class="form-label" for="login-email">邮箱地址<span class="required">*</span></label>
                         <input type="email" id="login-email" class="form-input" placeholder="请输入邮箱地址">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">密码<span class="required">*</span></label>
-                        <input type="password" class="form-input" placeholder="请输入密码">
+                        <label class="form-label" for="login-password">密码<span class="required">*</span></label>
+                        <input type="password" id="login-password" class="form-input" placeholder="请输入密码">
                         <div class="forgot-link">
                             <a href="#">忘记密码？</a>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">图形验证码<span class="required">*</span></label>
+                        <label class="form-label" for="login-captcha">图形验证码<span class="required">*</span></label>
                         <div class="captcha-wrapper">
                             <input type="text" id="login-captcha" class="form-input captcha-input" placeholder="请输入验证码" maxlength="4">
                             <canvas id="captcha-canvas" class="captcha-canvas" width="120" height="40"></canvas>
