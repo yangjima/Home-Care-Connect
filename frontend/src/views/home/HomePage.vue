@@ -34,6 +34,10 @@
             <span class="ql-icon">🛠️</span>
             <span>找服务</span>
           </router-link>
+          <router-link to="/purchase" class="quick-link">
+            <span class="ql-icon">🛒</span>
+            <span>本地商城</span>
+          </router-link>
           <router-link to="/secondhand" class="quick-link">
             <span class="ql-icon">🔄</span>
             <span>二手交易</span>
@@ -47,24 +51,12 @@
     </section>
 
     <!-- Stats -->
-    <section class="stats-section">
+    <section v-if="stats.length" class="stats-section">
       <div class="container">
         <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-number">{{ stats.properties }}+</div>
-            <div class="stat-label">精选房源</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ stats.services }}+</div>
-            <div class="stat-label">社区服务</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ stats.users }}+</div>
-            <div class="stat-label">注册用户</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-number">{{ stats.orders }}+</div>
-            <div class="stat-label">完成订单</div>
+          <div v-for="item in stats" :key="item.label" class="stat-item">
+            <div class="stat-number">{{ item.value }}</div>
+            <div class="stat-label">{{ item.label }}</div>
           </div>
         </div>
       </div>
@@ -79,6 +71,7 @@
         </div>
         <div class="property-grid">
           <PropertyCard v-for="item in hotProperties" :key="item.id" :property="item" />
+          <el-empty v-if="!loadingProperties && hotProperties.length === 0" description="暂无热门房源" />
         </div>
       </div>
     </section>
@@ -92,6 +85,7 @@
         </div>
         <div class="service-grid">
           <ServiceCard v-for="item in hotServices" :key="item.id" :service="item" />
+          <el-empty v-if="!loadingServices && hotServices.length === 0" description="暂无热门服务" />
         </div>
       </div>
     </section>
@@ -108,30 +102,55 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import PropertyCard from '@/components/property/PropertyCard.vue'
 import ServiceCard from '@/components/service/ServiceCard.vue'
+import { usePropertyStore } from '@/stores/property'
+import { useServiceStore } from '@/stores/service'
+import type { Property, ServiceType } from '@/types'
 
 const router = useRouter()
+const propertyStore = usePropertyStore()
+const serviceStore = useServiceStore()
 const searchKeyword = ref('')
 
-const stats = ref({
-  properties: 1200,
-  services: 86,
-  users: 5600,
-  orders: 9800,
-})
+const loadingProperties = ref(false)
+const loadingServices = ref(false)
+const stats = ref<Array<{ label: string; value: number }>>([])
+const hotProperties = ref<Property[]>([])
+const hotServices = ref<ServiceType[]>([])
 
-const hotProperties = ref([
-  { id: 1, title: '城中心精品公寓', address: '长安区中山路188号', price: 3500, area: 65, rooms: 2, livingRooms: 1, bathrooms: 1, type: '普通住宅', decoration: '精装修', image: '' },
-  { id: 2, title: '科技园智慧小区', address: '高新区创新路99号', price: 4200, area: 89, rooms: 3, livingRooms: 2, bathrooms: 1, type: '公寓', decoration: '精装修', image: '' },
-  { id: 3, title: '河畔花园洋房', address: '滨河区沿河大道188号', price: 5800, area: 120, rooms: 3, livingRooms: 2, bathrooms: 2, type: '洋房', decoration: '豪华装修', image: '' },
-  { id: 4, title: '地铁口精装两居', address: '2号线 XX 站', price: 2800, area: 55, rooms: 2, livingRooms: 1, bathrooms: 1, type: '普通住宅', decoration: '精装修', image: '' },
-])
+async function loadHotProperties() {
+  loadingProperties.value = true
+  try {
+    await propertyStore.fetchPropertyList({ page: 1, size: 4 })
+    hotProperties.value = propertyStore.propertyList.slice(0, 4)
+  } catch {
+    hotProperties.value = []
+  } finally {
+    loadingProperties.value = false
+  }
+}
 
-const hotServices = ref([
-  { id: 1, name: '日常家政保洁', description: '专业家政人员，深度清洁', price: 80, unit: '小时', icon: '🧹' },
-  { id: 2, name: '家电维修安装', description: '专业维修，处理各类故障', price: 100, unit: '次', icon: '🔧' },
-  { id: 3, name: '老人陪护服务', description: '持证护理人员陪护照料', price: 200, unit: '天', icon: '👴' },
-  { id: 4, name: '搬家运输服务', description: '包装搬运一条龙', price: 0, unit: '次', icon: '📦' },
-])
+async function loadHotServices() {
+  loadingServices.value = true
+  try {
+    await serviceStore.fetchServiceTypes()
+    hotServices.value = serviceStore.serviceTypes.slice(0, 4)
+  } catch {
+    hotServices.value = []
+  } finally {
+    loadingServices.value = false
+  }
+}
+
+function buildStats() {
+  const nextStats: Array<{ label: string; value: number }> = []
+  if (propertyStore.totalCount > 0) {
+    nextStats.push({ label: '精选房源', value: propertyStore.totalCount })
+  }
+  if (serviceStore.serviceTypes.length > 0) {
+    nextStats.push({ label: '社区服务', value: serviceStore.serviceTypes.length })
+  }
+  stats.value = nextStats
+}
 
 function handleSearch() {
   if (searchKeyword.value.trim()) {
@@ -140,6 +159,11 @@ function handleSearch() {
     router.push('/properties')
   }
 }
+
+onMounted(async () => {
+  await Promise.all([loadHotProperties(), loadHotServices()])
+  buildStats()
+})
 </script>
 
 <style scoped lang="scss">

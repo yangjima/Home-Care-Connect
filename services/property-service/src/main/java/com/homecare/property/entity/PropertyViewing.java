@@ -18,21 +18,25 @@ public class PropertyViewing {
     /**
      * 房产ID
      */
+    @TableField("property_id")
     private Long propertyId;
 
     /**
      * 预约用户ID
      */
+    @TableField("user_id")
     private Long userId;
 
     /**
      * 分销员ID
      */
+    @TableField("distributor_id")
     private Long distributorId;
 
     /**
      * 预约时间
      */
+    @TableField("appointment_time")
     private LocalDateTime viewingTime;
 
     /**
@@ -43,19 +47,21 @@ public class PropertyViewing {
     /**
      * 用户备注
      */
+    @TableField("remark")
     private String userRemark;
 
     /**
      * 管理员备注
      */
+    @TableField(exist = false)
     private String adminRemark;
 
-    @TableLogic
+    @TableField(exist = false)
     private Integer deleted;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

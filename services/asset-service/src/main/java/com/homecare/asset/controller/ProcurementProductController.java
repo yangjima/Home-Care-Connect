@@ -57,11 +57,11 @@ public class ProcurementProductController {
      */
     @GetMapping
     public Result<PageResult<ProcurementProductResponse>> list(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String status) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "status", required = false) String status) {
         var result = productService.list(page, pageSize, keyword, category, status);
         return Result.success(result);
     }
@@ -81,7 +81,7 @@ public class ProcurementProductController {
     @PatchMapping("/{id}/stock")
     public Result<ProcurementProductResponse> updateStock(
             @PathVariable Long id,
-            @RequestParam int quantity) {
+            @RequestParam("quantity") int quantity) {
         ProcurementProductResponse response = productService.updateStock(id, quantity);
         return Result.success("更新成功", response);
     }

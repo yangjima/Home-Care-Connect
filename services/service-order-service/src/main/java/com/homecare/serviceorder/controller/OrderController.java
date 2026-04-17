@@ -47,7 +47,7 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public Result<OrderResponse> cancelOrder(
             @PathVariable Long id,
-            @RequestParam(required = false) String reason,
+            @RequestParam(value = "reason", required = false) String reason,
             HttpServletRequest httpRequest) {
         Long userId = getUserId(httpRequest);
         OrderResponse response = orderService.cancelOrder(id, reason, userId);
@@ -78,7 +78,7 @@ public class OrderController {
     @PostMapping("/{id}/pay")
     public Result<OrderResponse> payOrder(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "wechat") String payMethod) {
+            @RequestParam(value = "payMethod", defaultValue = "wechat") String payMethod) {
         OrderResponse response = orderService.payOrder(id, payMethod);
         return Result.success("支付成功", response);
     }
@@ -97,12 +97,12 @@ public class OrderController {
      */
     @GetMapping
     public Result<PageResult<OrderResponse>> listOrders(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) Long storeId,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String payStatus) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "storeId", required = false) Long storeId,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "payStatus", required = false) String payStatus) {
         var result = orderService.listOrders(page, pageSize, userId, storeId, status, payStatus);
         return Result.success(result);
     }
@@ -112,9 +112,9 @@ public class OrderController {
      */
     @GetMapping("/my")
     public Result<PageResult<OrderResponse>> listMyOrders(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String status,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "status", required = false) String status,
             HttpServletRequest httpRequest) {
         Long userId = getUserId(httpRequest);
         var result = orderService.listOrdersByUserId(userId, page, pageSize, status);

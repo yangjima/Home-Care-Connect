@@ -16,6 +16,22 @@ from prompts.router_prompt import ROUTER_PROMPT
 logger = logging.getLogger(__name__)
 
 
+def _keyword_route(query: str) -> str:
+    """LLM 不可用时的关键词路由兜底。"""
+    text = (query or "").lower()
+    property_keywords = ("租房", "找房", "房源", "公寓", "看房", "租金", "房价", "house", "property")
+    service_keywords = ("保洁", "维修", "清洁", "疏通", "开锁", "家政", "服务", "service")
+    procurement_keywords = ("采购", "商品", "购物", "家具", "家电", "二手", "转让", "闲置", "procurement")
+
+    if any(k in text for k in property_keywords):
+        return "property"
+    if any(k in text for k in service_keywords):
+        return "service"
+    if any(k in text for k in procurement_keywords):
+        return "procurement"
+    return "general"
+
+
 async def route_query(query: str, user_id: Optional[str] = None) -> str:
     """
     分析用户查询，返回路由决策
@@ -34,22 +50,22 @@ async def route_query(query: str, user_id: Optional[str] = None) -> str:
         ]
 
         response = await llm.ainvoke(messages)
+        content = (getattr(response, "content", "") or "").strip().lower()
 
-        content = response.content.strip().lower()
-
-        # 解析 LLM 返回的路由决策
+        # 解析 LLM 返回的路由决策，若无法解析则回退到关键词分类
         if "property" in content:
             return "property"
-        elif "service" in content:
+        if "service" in content:
             return "service"
-        elif "procurement" in content:
+        if "procurement" in content:
             return "procurement"
-        else:
+        if "general" in content:
             return "general"
+        return _keyword_route(query)
 
     except Exception as e:
-        logger.error(f"路由分析失败: {e}")
-        return "general"
+        logger.exception("路由分析失败，启用关键词兜底路由")
+        return _keyword_route(query)
 
 
 def parse_route_response(content: str) -> str:

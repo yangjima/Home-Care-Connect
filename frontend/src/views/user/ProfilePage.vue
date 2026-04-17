@@ -12,7 +12,7 @@
             <el-icon v-else :size="48"><UserFilled /></el-icon>
           </div>
           <el-upload action="#" :show-file-list="false" :before-upload="handleAvatarUpload">
-            <el-button size="small">更换头像</el-button>
+            <el-button size="small" :loading="avatarUploading">更换头像</el-button>
           </el-upload>
         </div>
 
@@ -62,6 +62,8 @@ import { UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import type { FormInstance, FormRules } from 'element-plus'
+import { updatePassword, updateUser, uploadAvatar } from '@/api/auth'
+import type { User } from '@/types'
 
 const authStore = useAuthStore()
 
@@ -69,6 +71,7 @@ const formRef = ref<FormInstance>()
 const pwdFormRef = ref<FormInstance>()
 const saving = ref(false)
 const changingPwd = ref(false)
+const avatarUploading = ref(false)
 
 const form = reactive({
   username: '',
@@ -112,7 +115,8 @@ const pwdRules: FormRules = {
   ],
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await authStore.fetchUserInfo()
   handleReset()
 })
 
@@ -120,7 +124,7 @@ function handleReset() {
   const user = authStore.userInfo
   if (user) {
     form.username = user.username || ''
-    form.nickname = user.nickname || ''
+    form.nickname = (user as any).realName || user.nickname || ''
     form.email = user.email || ''
     form.phone = user.phone || ''
     form.avatar = user.avatar || ''
@@ -130,10 +134,30 @@ function handleReset() {
 async function handleSave() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (!authStore.userInfo?.id) {
+    ElMessage.error('未获取到用户信息，请重新登录后再试')
+    return
+  }
 
   saving.value = true
   try {
-    // TODO: 调用更新用户信息 API
+    const updated = await updateUser(authStore.userInfo.id, {
+      username: form.username,
+      realName: form.nickname,
+      email: form.email,
+      phone: form.phone,
+      avatar: form.avatar,
+    })
+    const mergedUser: User = {
+      ...(authStore.userInfo as User),
+      ...(updated as Partial<User>),
+      username: (updated as Partial<User>)?.username || form.username,
+      email: (updated as Partial<User>)?.email || form.email,
+      phone: (updated as Partial<User>)?.phone || form.phone,
+      avatar: (updated as Partial<User>)?.avatar || form.avatar,
+      nickname: (updated as any)?.realName || form.nickname,
+    }
+    authStore.setUserInfo(mergedUser)
     ElMessage.success('保存成功')
   } catch {
     ElMessage.error('保存失败，请稍后重试')
@@ -145,10 +169,17 @@ async function handleSave() {
 async function handleChangePwd() {
   const valid = await pwdFormRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (!authStore.userInfo?.id) {
+    ElMessage.error('未获取到用户信息，请重新登录后再试')
+    return
+  }
 
   changingPwd.value = true
   try {
-    // TODO: 调用修改密码 API
+    await updatePassword(authStore.userInfo.id, {
+      oldPassword: pwdForm.oldPassword,
+      newPassword: pwdForm.newPassword,
+    })
     ElMessage.success('密码修改成功')
     pwdForm.oldPassword = ''
     pwdForm.newPassword = ''
@@ -160,7 +191,7 @@ async function handleChangePwd() {
   }
 }
 
-function handleAvatarUpload(file: File) {
+async function handleAvatarUpload(file: File) {
   const isImage = file.type.startsWith('image/')
   const isLt2M = file.size / 1024 / 1024 < 2
 
@@ -173,9 +204,25 @@ function handleAvatarUpload(file: File) {
     return false
   }
 
-  // 模拟上传，返回本地预览 URL
-  const url = URL.createObjectURL(file)
-  form.avatar = url
+  avatarUploading.value = true
+  try {
+    const result = await uploadAvatar(file)
+    form.avatar = (result as any)?.avatar || ''
+
+    if ((result as any)?.user) {
+      authStore.setUserInfo((result as any).user as User)
+    } else if (authStore.userInfo) {
+      authStore.setUserInfo({
+        ...(authStore.userInfo as User),
+        avatar: form.avatar,
+      })
+    }
+    ElMessage.success('头像上传成功')
+  } catch {
+    ElMessage.error('头像上传失败，请稍后重试')
+  } finally {
+    avatarUploading.value = false
+  }
   return false
 }
 </script>

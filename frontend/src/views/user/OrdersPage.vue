@@ -36,11 +36,11 @@
         </div>
 
         <div class="order-actions">
-          <el-button v-if="order.status === 1 && order.payStatus === 0" type="primary" size="small" @click="handlePay(order.id)">
+          <el-button v-if="canPay(order)" type="primary" size="small" @click="handlePay(order.id)">
             去支付
           </el-button>
-          <el-button v-if="order.status === 1" size="small" @click="handleCancel(order.id)">取消订单</el-button>
-          <el-button v-if="order.status === 3" size="small" @click="handleReview(order.id)">评价</el-button>
+          <el-button v-if="canCancel(order)" size="small" @click="handleCancel(order.id)">取消订单</el-button>
+          <el-button v-if="toStatusKey(order.status) === 'completed'" size="small" @click="handleReview(order.id)">评价</el-button>
           <el-button size="small" @click="viewDetail(order.id)">查看详情</el-button>
         </div>
       </div>
@@ -66,6 +66,7 @@ import { Clock, Location } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useServiceStore } from '@/stores/service'
 import type { ServiceOrder } from '@/types'
+import { createReview, getOrderDetail } from '@/api/service'
 
 const serviceStore = useServiceStore()
 
@@ -76,41 +77,64 @@ const pageSize = ref(10)
 const total = ref(0)
 const filterStatus = ref('')
 
-const statusMap: Record<number, string> = {
-  0: '待处理',
-  1: '已确认',
-  2: '服务中',
-  3: '已完成',
-  4: '已取消',
+const statusMap: Record<string, string> = {
+  pending: '待处理',
+  assigned: '已确认',
+  accepted: '已接单',
+  in_progress: '服务中',
+  completed: '已完成',
+  cancelled: '已取消',
 }
 
-const payStatusMap: Record<number, string> = {
-  0: '待支付',
-  1: '已支付',
-  2: '已退款',
+const payStatusMap: Record<string, string> = {
+  pending: '待支付',
+  paid: '已支付',
+  refunded: '已退款',
 }
 
-function statusLabel(status: number): string {
-  return statusMap[status] || '未知'
-}
-
-function statusClass(status: number): string {
-  const map: Record<number, string> = {
-    0: 'pending',
-    1: 'confirmed',
-    2: 'processing',
-    3: 'completed',
-    4: 'cancelled',
+function toStatusKey(status: number | string): string {
+  if (typeof status === 'number') {
+    if (status === 0) return 'pending'
+    if (status === 1) return 'assigned'
+    if (status === 2) return 'in_progress'
+    if (status === 3) return 'completed'
+    if (status === 4) return 'cancelled'
   }
-  return map[status] || ''
+  return String(status || '')
 }
 
-function payStatusLabel(status: number): string {
-  return payStatusMap[status] || '未知'
+function statusLabel(status: number | string): string {
+  return statusMap[toStatusKey(status)] || '未知'
 }
 
-function payStatusClass(status: number): string {
-  return status === 1 ? 'paid' : 'unpaid'
+function statusClass(status: number | string): string {
+  const map: Record<string, string> = {
+    pending: 'pending',
+    assigned: 'confirmed',
+    accepted: 'confirmed',
+    in_progress: 'processing',
+    completed: 'completed',
+    cancelled: 'cancelled',
+  }
+  return map[toStatusKey(status)] || ''
+}
+
+function toPayStatusKey(status: number | string | null): string {
+  if (status === null || status === undefined || status === '') return 'pending'
+  if (typeof status === 'number') {
+    if (status === 1) return 'paid'
+    if (status === 2) return 'refunded'
+    return 'pending'
+  }
+  return String(status)
+}
+
+function payStatusLabel(status: number | string | null): string {
+  return payStatusMap[toPayStatusKey(status)] || '待支付'
+}
+
+function payStatusClass(status: number | string | null): string {
+  return toPayStatusKey(status) === 'paid' ? 'paid' : 'unpaid'
 }
 
 function formatDate(date?: string): string {
@@ -118,12 +142,20 @@ function formatDate(date?: string): string {
   return new Date(date).toLocaleString('zh-CN')
 }
 
-function getStatusParam(status: string): number | undefined {
-  if (status === 'pending') return 0
-  if (status === 'confirmed') return 1
-  if (status === 'completed') return 3
-  if (status === 'cancelled') return 4
+function getStatusParam(status: string): string | undefined {
+  if (!status) return undefined
+  if (status === 'confirmed') return 'assigned'
+  if (status === 'pending' || status === 'completed' || status === 'cancelled') return status
   return undefined
+}
+
+function canPay(order: ServiceOrder): boolean {
+  return toStatusKey(order.status) === 'pending'
+}
+
+function canCancel(order: ServiceOrder): boolean {
+  const status = toStatusKey(order.status)
+  return ['pending', 'assigned', 'accepted', 'in_progress'].includes(status)
 }
 
 async function fetchOrders() {
@@ -132,6 +164,7 @@ async function fetchOrders() {
     const result = await serviceStore.fetchMyOrders({
       page: page.value,
       size: pageSize.value,
+      status: getStatusParam(filterStatus.value),
     })
     orders.value = serviceStore.myOrders
     total.value = (result as any)?.total || 0
@@ -170,12 +203,45 @@ async function handleCancel(id: number) {
   }
 }
 
-function handleReview(id: number) {
-  ElMessage.info(`评价功能开发中，订单ID: ${id}`)
+async function handleReview(id: number) {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入评价内容（可选）', '订单评价', {
+      confirmButtonText: '提交',
+      cancelButtonText: '取消',
+      inputType: 'textarea',
+      inputValue: '',
+    })
+    await createReview({
+      orderId: id,
+      rating: 5,
+      content: value || '',
+      isAnonymous: false,
+    })
+    ElMessage.success('评价提交成功')
+  } catch {
+    // 用户取消
+  }
 }
 
-function viewDetail(id: number) {
-  ElMessage.info(`订单详情功能开发中，订单ID: ${id}`)
+async function viewDetail(id: number) {
+  try {
+    const detail = await getOrderDetail(id)
+    const data = detail as any
+    await ElMessageBox.alert(
+      [
+        `订单号：${data.orderNo || '-'}`,
+        `服务：${data.serviceTypeName || '-'}`,
+        `时间：${formatDate(data.serviceTime)}`,
+        `地址：${data.serviceAddress || '-'}`,
+        `金额：¥${data.totalAmount || 0}`,
+        `状态：${statusLabel(data.status)}`,
+      ].join('\n'),
+      '订单详情',
+      { confirmButtonText: '我知道了' },
+    )
+  } catch {
+    ElMessage.error('获取订单详情失败')
+  }
 }
 
 onMounted(() => {

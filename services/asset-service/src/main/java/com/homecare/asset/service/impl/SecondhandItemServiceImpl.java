@@ -12,6 +12,7 @@ import com.homecare.asset.service.SecondhandItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ public class SecondhandItemServiceImpl implements SecondhandItemService {
         item.setCondition(request.getCondition());
         item.setImage(request.getImage());
         item.setImages(request.getImages());
-        item.setStatus("pending");
+        item.setStatus("1");
         item.setViewCount(0L);
         item.setExpireTime(request.getExpireTime() != null ? request.getExpireTime() :
                 LocalDateTime.now().plusDays(30));
@@ -83,14 +84,14 @@ public class SecondhandItemServiceImpl implements SecondhandItemService {
     public PageResult<SecondhandItemResponse> list(int page, int pageSize, String keyword,
             String category, String condition, String status) {
         LambdaQueryWrapper<SecondhandItem> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.like(SecondhandItem::getTitle, keyword)
                    .or()
                    .like(SecondhandItem::getDescription, keyword);
         }
-        if (category != null) wrapper.eq(SecondhandItem::getCategory, category);
-        if (condition != null) wrapper.eq(SecondhandItem::getCondition, condition);
-        if (status != null) wrapper.eq(SecondhandItem::getStatus, status);
+        if (StringUtils.hasText(category)) wrapper.eq(SecondhandItem::getCategory, category);
+        if (StringUtils.hasText(condition)) wrapper.eq(SecondhandItem::getCondition, condition);
+        if (StringUtils.hasText(status)) wrapper.eq(SecondhandItem::getStatus, status);
         wrapper.orderByDesc(SecondhandItem::getCreateTime);
 
         Page<SecondhandItem> pageResult = itemRepository.selectPage(

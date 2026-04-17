@@ -18,9 +18,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 /**
  * 认证服务实现
@@ -45,6 +47,14 @@ public class AuthServiceImpl implements AuthService {
     private static final String CAPTCHA_PREFIX = "captcha:";
     private static final long CAPTCHA_TTL = 300; // 5分钟
 
+    private static final String VERIFY_CODE_PREFIX = "verify:code:";
+    private static final String VERIFY_CODE_COOLDOWN_PREFIX = "verify:cooldown:";
+    private static final long VERIFY_CODE_TTL_SECONDS = 300; // 5分钟
+    private static final long VERIFY_CODE_COOLDOWN_SECONDS = 60; // 60秒内只能发送一次
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^\\S+@\\S+\\.\\S+$");
+
     @Override
     public TokenResponse login(LoginRequest request) {
         // 图形验证码校验
@@ -60,7 +70,6 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.selectOne(
                 new LambdaQueryWrapper<User>()
                         .eq(User::getUsername, request.getUsername())
-                        .eq(User::getDeleted, 0)
         );
 
         if (user == null) {
@@ -94,7 +103,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("用户登录成功: {}", user.getUsername());
 
-        return TokenResponse.of(accessToken, refreshToken, accessTokenExpiration / 1000);
+        return TokenResponse.of(accessToken, refreshToken, accessTokenExpiration / 1000, toUserResponse(user));
     }
 
     @Override
@@ -144,6 +153,92 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("用户注册成功: {}", user.getUsername());
 
+        return toUserResponse(user);
+    }
+
+    @Override
+    public void sendCode(String type, String target) {
+        String normalizedType = normalizeCodeType(type);
+        String normalizedTarget = normalizeTarget(normalizedType, target);
+
+        String cooldownKey = VERIFY_CODE_COOLDOWN_PREFIX + normalizedType + ":" + normalizedTarget;
+        Boolean inCooldown = redisTemplate.hasKey(cooldownKey);
+        if (Boolean.TRUE.equals(inCooldown)) {
+            throw new BusinessException(429, "操作过于频繁，请稍后再试");
+        }
+
+        String code = generateNumericCode(6);
+        String codeKey = VERIFY_CODE_PREFIX + normalizedType + ":" + normalizedTarget;
+
+        redisTemplate.opsForValue().set(codeKey, code, VERIFY_CODE_TTL_SECONDS, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(cooldownKey, "1", VERIFY_CODE_COOLDOWN_SECONDS, TimeUnit.SECONDS);
+
+        // MVP：先把验证码打印日志，后续对接短信/邮件服务
+        log.info("发送验证码成功 type={} target={} code={} ttl={}s", normalizedType, normalizedTarget, code, VERIFY_CODE_TTL_SECONDS);
+    }
+
+    @Override
+    public boolean verifyCode(String type, String target, String code) {
+        String normalizedType = normalizeCodeType(type);
+        String normalizedTarget = normalizeTarget(normalizedType, target);
+
+        if (!StringUtils.hasText(code)) {
+            throw new BusinessException(400, "验证码不能为空");
+        }
+
+        String codeKey = VERIFY_CODE_PREFIX + normalizedType + ":" + normalizedTarget;
+        String cached = redisTemplate.opsForValue().get(codeKey);
+        if (!StringUtils.hasText(cached)) {
+            return false;
+        }
+
+        boolean ok = cached.equals(code.trim());
+        if (ok) {
+            redisTemplate.delete(codeKey);
+        }
+        return ok;
+    }
+
+    @Override
+    public UserResponse registerByEmail(EmailRegisterRequest request) {
+        if (!StringUtils.hasText(request.getPassword()) || !request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException(400, "两次密码输入不一致");
+        }
+
+        String email = request.getEmail() == null ? null : request.getEmail().trim();
+        boolean ok = verifyCode("email", email, request.getCode());
+        if (!ok) {
+            throw new BusinessException(400, "验证码错误或已过期");
+        }
+
+        if (StringUtils.hasText(email) && userService.isEmailExists(email)) {
+            throw new BusinessException(400, "邮箱已被注册");
+        }
+
+        // 邮箱即登录账号
+        String username = email;
+        if (userService.isUsernameExists(username)) {
+            throw new BusinessException(400, "用户名已存在");
+        }
+
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        if (StringUtils.hasText(request.getRealName())) {
+            user.setRealName(request.getRealName().trim());
+        } else if (StringUtils.hasText(email) && email.contains("@")) {
+            user.setRealName(email.substring(0, email.indexOf('@')));
+        } else {
+            user.setRealName("用户");
+        }
+
+        user.setRole("tenant");
+        user.setStatus("active");
+        userRepository.insert(user);
+
+        log.info("邮箱注册成功: {}", user.getEmail());
         return toUserResponse(user);
     }
 
@@ -200,5 +295,36 @@ public class AuthServiceImpl implements AuthService {
         BeanUtils.copyProperties(user, response);
         // UserResponse 不包含 password 字段，无需额外处理
         return response;
+    }
+
+    private String normalizeCodeType(String type) {
+        if (!StringUtils.hasText(type)) {
+            throw new BusinessException(400, "验证码类型不能为空");
+        }
+        String t = type.trim().toLowerCase();
+        if (!("sms".equals(t) || "email".equals(t))) {
+            throw new BusinessException(400, "验证码类型不支持");
+        }
+        return t;
+    }
+
+    private String normalizeTarget(String type, String target) {
+        if (!StringUtils.hasText(target)) {
+            throw new BusinessException(400, "接收方不能为空");
+        }
+        String v = target.trim();
+        if ("sms".equals(type) && !PHONE_PATTERN.matcher(v).matches()) {
+            throw new BusinessException(400, "手机号格式不正确");
+        }
+        if ("email".equals(type) && !EMAIL_PATTERN.matcher(v).matches()) {
+            throw new BusinessException(400, "邮箱格式不正确");
+        }
+        return v;
+    }
+
+    private String generateNumericCode(int length) {
+        int bound = (int) Math.pow(10, length);
+        int code = SECURE_RANDOM.nextInt(bound);
+        return String.format("%0" + length + "d", code);
     }
 }

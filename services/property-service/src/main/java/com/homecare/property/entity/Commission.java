@@ -19,44 +19,56 @@ public class Commission {
     /**
      * 关联的订单ID（服务订单或租赁）
      */
+    @TableField(exist = false)
     private Long orderId;
 
     /**
      * 关联的房产ID
      */
+    @TableField("property_id")
     private Long propertyId;
 
     /**
      * 分销员ID
      */
+    @TableField("distributor_id")
     private Long distributorId;
 
     /**
      * 佣金金额
      */
+    @TableField("commission_amount")
     private BigDecimal amount;
 
     /**
      * 佣金比例
      */
+    @TableField("commission_rate")
     private BigDecimal rate;
 
+    @TableField("deal_price")
+    private BigDecimal dealPrice;
+
     /**
-     * 状态：pending/paid/cancelled
+     * 状态：pending/settled/cancelled
      */
     private String status;
 
     /**
      * 备注
      */
+    @TableField(exist = false)
     private String remark;
 
-    @TableLogic
+    @TableField(value = "settled_at")
+    private LocalDateTime settledAt;
+
+    @TableField(exist = false)
     private Integer deleted;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

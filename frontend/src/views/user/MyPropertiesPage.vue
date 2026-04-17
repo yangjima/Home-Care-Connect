@@ -2,7 +2,7 @@
   <div class="my-properties-page">
     <div class="page-header">
       <h1>我的房源</h1>
-      <el-button type="primary" @click="showPublishDialog = true">
+      <el-button type="primary" @click="openPublishDialog">
         <el-icon><Plus /></el-icon> 发布房源
       </el-button>
     </div>
@@ -95,7 +95,9 @@
       </el-form>
       <template #footer>
         <el-button @click="showPublishDialog = false">取消</el-button>
-        <el-button type="primary" :loading="publishing" @click="handlePublish">发布</el-button>
+        <el-button type="primary" :loading="publishing" @click="handlePublish">
+          {{ editingId ? '保存修改' : '发布' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -106,6 +108,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Property } from '@/types'
+import { createProperty, deletePropertyById, getMyProperties, updateProperty } from '@/api/property'
+import { useAuthStore } from '@/stores/auth'
 
 const loading = ref(false)
 const publishing = ref(false)
@@ -115,6 +119,8 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const showPublishDialog = ref(false)
+const editingId = ref<number | null>(null)
+const authStore = useAuthStore()
 
 const publishForm = reactive({
   title: '',
@@ -131,32 +137,81 @@ const publishForm = reactive({
   description: '',
 })
 
-const statusMap: Record<number, string> = {
-  0: '待审核',
-  1: '已上架',
-  2: '已下架',
+const statusMap: Record<string, string> = {
+  pending: '待审核',
+  published: '已上架',
+  rented: '已出租',
+  offline: '已下架',
 }
 
-function statusLabel(status: number): string {
-  return statusMap[status] ?? '未知'
-}
-
-function statusClass(status: number): string {
-  const map: Record<number, string> = {
-    0: 'pending',
-    1: 'active',
-    2: 'inactive',
+function toStatusKey(status: number | string): string {
+  if (typeof status === 'number') {
+    if (status === 0) return 'pending'
+    if (status === 1) return 'published'
+    if (status === 2) return 'offline'
   }
-  return map[status] || ''
+  return String(status || '')
+}
+
+function statusLabel(status: number | string): string {
+  return statusMap[toStatusKey(status)] ?? '未知'
+}
+
+function statusClass(status: number | string): string {
+  const map: Record<string, string> = {
+    pending: 'pending',
+    published: 'active',
+    rented: 'inactive',
+    offline: 'inactive',
+  }
+  return map[toStatusKey(status)] || ''
+}
+
+function parseLayout(layout?: string): { rooms: number; livingRooms: number; bathrooms: number } {
+  const matched = layout?.match(/(\d+)\D+(\d+)\D+(\d+)/)
+  if (!matched) {
+    return { rooms: 0, livingRooms: 0, bathrooms: 0 }
+  }
+  return {
+    rooms: Number(matched[1] || 0),
+    livingRooms: Number(matched[2] || 0),
+    bathrooms: Number(matched[3] || 0),
+  }
+}
+
+function normalizeProperty(item: any): Property {
+  const layout = parseLayout(item.layout)
+  return {
+    id: Number(item.id),
+    title: item.title || '',
+    address: item.address || '',
+    price: Number(item.rentPrice || 0),
+    area: Number(item.area || 0),
+    rooms: layout.rooms,
+    livingRooms: layout.livingRooms,
+    bathrooms: layout.bathrooms,
+    floor: Number(item.floor || 1),
+    totalFloors: Number(item.totalFloor || 1),
+    type: item.propertyType || '',
+    decoration: '精装',
+    description: item.description || '',
+    images: item.images || (item.coverImage ? [item.coverImage] : []),
+    status: (item.status || 'pending') as any,
+  }
 }
 
 async function fetchMyProperties() {
+  if (!authStore.userInfo?.id) return
   loading.value = true
   try {
-    // TODO: 调用我的房源 API
-    // 暂时使用模拟数据
-    properties.value = []
-    total.value = 0
+    const result = await getMyProperties({
+      page: page.value,
+      size: pageSize.value,
+      ownerId: authStore.userInfo.id,
+    })
+    const records = (result.records ?? result.list ?? []) as any[]
+    properties.value = records.map(normalizeProperty)
+    total.value = Number(result.total || 0)
   } finally {
     loading.value = false
   }
@@ -170,9 +225,26 @@ async function handlePublish() {
 
   publishing.value = true
   try {
-    // TODO: 调用发布房源 API
-    ElMessage.success('发布成功！')
+    const payload = {
+      title: publishForm.title,
+      propertyType: publishForm.type,
+      rentPrice: publishForm.price,
+      address: publishForm.address,
+      area: publishForm.area,
+      floor: publishForm.floor,
+      totalFloor: publishForm.totalFloors,
+      layout: `${publishForm.rooms}室${publishForm.livingRooms}厅${publishForm.bathrooms}卫`,
+      description: publishForm.description,
+    }
+    if (editingId.value) {
+      await updateProperty(editingId.value, payload)
+      ElMessage.success('房源更新成功')
+    } else {
+      await createProperty(payload)
+      ElMessage.success('发布成功')
+    }
     showPublishDialog.value = false
+    editingId.value = null
     Object.assign(publishForm, {
       title: '', type: '', price: 0, area: 0, rooms: 0,
       livingRooms: 0, bathrooms: 0, floor: 1, totalFloors: 1,
@@ -186,12 +258,39 @@ async function handlePublish() {
   }
 }
 
+function openPublishDialog() {
+  editingId.value = null
+  Object.assign(publishForm, {
+    title: '', type: '', price: 0, area: 0, rooms: 0,
+    livingRooms: 0, bathrooms: 0, floor: 1, totalFloors: 1,
+    decoration: '精装', address: '', description: '',
+  })
+  showPublishDialog.value = true
+}
+
 function viewDetail(id: number) {
   window.location.href = `/properties/${id}`
 }
 
 function editProperty(id: number) {
-  ElMessage.info(`编辑功能开发中，房源ID: ${id}`)
+  const target = properties.value.find((item) => item.id === id)
+  if (!target) return
+  editingId.value = id
+  Object.assign(publishForm, {
+    title: target.title || '',
+    type: target.type || '',
+    price: target.price || 0,
+    area: target.area || 0,
+    rooms: target.rooms || 0,
+    livingRooms: target.livingRooms || 0,
+    bathrooms: target.bathrooms || 0,
+    floor: target.floor || 1,
+    totalFloors: target.totalFloors || 1,
+    decoration: target.decoration || '精装',
+    address: target.address || '',
+    description: target.description || '',
+  })
+  showPublishDialog.value = true
 }
 
 async function deleteProperty(id: number) {
@@ -201,7 +300,7 @@ async function deleteProperty(id: number) {
       cancelButtonText: '取消',
       type: 'warning',
     })
-    // TODO: 调用删除 API
+    await deletePropertyById(id)
     ElMessage.success('删除成功')
     fetchMyProperties()
   } catch {
@@ -209,7 +308,8 @@ async function deleteProperty(id: number) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await authStore.fetchUserInfo()
   fetchMyProperties()
 })
 </script>

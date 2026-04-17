@@ -22,7 +22,7 @@ public class ServiceTypeServiceImpl implements ServiceTypeService {
     public List<?> listAllServiceTypes() {
         return serviceTypeRepository.selectList(
                 new LambdaQueryWrapper<ServiceType>()
-                        .orderByAsc(ServiceType::getSortOrder)
+                        .orderByAsc(ServiceType::getId)
         );
     }
 
@@ -30,8 +30,8 @@ public class ServiceTypeServiceImpl implements ServiceTypeService {
     public List<?> listActiveServiceTypes() {
         return serviceTypeRepository.selectList(
                 new LambdaQueryWrapper<ServiceType>()
-                        .eq(ServiceType::getStatus, "active")
-                        .orderByAsc(ServiceType::getSortOrder)
+                        .eq(ServiceType::getStatus, 1)
+                        .orderByAsc(ServiceType::getId)
         );
     }
 

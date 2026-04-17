@@ -60,11 +60,9 @@
         </el-form-item>
         <el-form-item label="新旧程度" required>
           <el-select v-model="publishForm.condition" placeholder="请选择" style="width: 100%">
-            <el-option label="全新" value="new" />
             <el-option label="几乎全新" value="like_new" />
             <el-option label="良好" value="good" />
             <el-option label="一般" value="fair" />
-            <el-option label="较差" value="poor" />
           </el-select>
         </el-form-item>
         <el-form-item label="价格" required>
@@ -136,6 +134,10 @@ async function fetchList() {
     })
     itemList.value = secondhandStore.itemList
     total.value = secondhandStore.totalCount
+  } catch {
+    itemList.value = []
+    total.value = 0
+    ElMessage.error('二手数据加载失败，请稍后重试')
   } finally {
     loading.value = false
   }

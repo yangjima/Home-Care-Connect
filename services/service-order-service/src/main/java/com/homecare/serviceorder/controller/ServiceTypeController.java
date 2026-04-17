@@ -22,7 +22,7 @@ public class ServiceTypeController {
      */
     @GetMapping
     public Result<List<?>> listServiceTypes(
-            @RequestParam(defaultValue = "false") boolean activeOnly) {
+            @RequestParam(value = "activeOnly", defaultValue = "false") boolean activeOnly) {
         List<?> types = activeOnly
                 ? serviceTypeService.listActiveServiceTypes()
                 : serviceTypeService.listAllServiceTypes();

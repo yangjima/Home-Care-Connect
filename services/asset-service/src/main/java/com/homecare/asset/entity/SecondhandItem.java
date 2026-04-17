@@ -15,8 +15,10 @@ public class SecondhandItem {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("publisher_id")
     private Long userId;
 
+    @TableField(exist = false)
     private Long storeId;
 
     private String title;
@@ -27,24 +29,28 @@ public class SecondhandItem {
 
     private BigDecimal price;
 
+    @TableField("`condition`")
     private String condition;
 
+    @TableField(exist = false)
     private String image;
 
     private String images;
 
     private String status;
 
+    @TableField(exist = false)
     private Long viewCount;
 
+    @TableField(exist = false)
     private LocalDateTime expireTime;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @TableLogic
+    @TableField(exist = false)
     private Integer deleted;
 }

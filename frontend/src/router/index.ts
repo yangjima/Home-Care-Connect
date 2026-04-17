@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '预约服务' },
   },
   {
+    path: '/purchase',
+    name: 'Purchase',
+    component: () => import('@/views/asset/PurchasePage.vue'),
+    meta: { title: '本地商城' },
+  },
+  {
     path: '/secondhand',
     name: 'SecondhandList',
     component: () => import('@/views/asset/SecondhandListPage.vue'),

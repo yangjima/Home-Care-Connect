@@ -38,6 +38,15 @@ public class AuthController {
     }
 
     /**
+     * 邮箱注册（验证码注册）
+     */
+    @PostMapping("/register-email")
+    public Result<UserResponse> registerByEmail(@Valid @RequestBody EmailRegisterRequest request) {
+        UserResponse response = authService.registerByEmail(request);
+        return Result.success("注册成功", response);
+    }
+
+    /**
      * 刷新令牌
      */
     @PostMapping("/refresh")
@@ -79,18 +88,18 @@ public class AuthController {
      * 检查用户名是否存在
      */
     @GetMapping("/check-username")
-    public Result<Boolean> checkUsername(@RequestParam String username) {
+    public Result<Boolean> checkUsername(@RequestParam("username") String username) {
         // 这里需要调用 UserService，但 AuthController 不直接依赖 UserServiceImpl
         // 简化处理，后续可抽取到单独的校验 API
         return Result.success(false);
     }
 
     /**
-     * 发送验证码（预留接口）
+     * 发送验证码
      */
     @PostMapping("/send-code")
-    public Result<Void> sendCode(@RequestBody SendCodeRequest request) {
-        // TODO: 实现短信/邮箱验证码发送逻辑
+    public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
+        authService.sendCode(request.getType(), request.getTarget());
         return Result.success("验证码已发送", null);
     }
 
@@ -98,9 +107,9 @@ public class AuthController {
      * 验证验证码（预留接口）
      */
     @PostMapping("/verify-code")
-    public Result<Boolean> verifyCode(@RequestBody VerifyCodeRequest request) {
-        // TODO: 实现验证码校验逻辑
-        return Result.success(true);
+    public Result<Boolean> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+        boolean ok = authService.verifyCode(request.getType(), request.getTarget(), request.getCode());
+        return Result.success(ok);
     }
 
     /**
@@ -122,14 +131,19 @@ public class AuthController {
 
     @lombok.Data
     public static class SendCodeRequest {
+        @jakarta.validation.constraints.NotBlank(message = "验证码类型不能为空")
         private String type; // sms / email
+        @jakarta.validation.constraints.NotBlank(message = "接收方不能为空")
         private String target; // 手机号或邮箱
     }
 
     @lombok.Data
     public static class VerifyCodeRequest {
+        @jakarta.validation.constraints.NotBlank(message = "验证码类型不能为空")
         private String type;
+        @jakarta.validation.constraints.NotBlank(message = "接收方不能为空")
         private String target;
+        @jakarta.validation.constraints.NotBlank(message = "验证码不能为空")
         private String code;
     }
 }

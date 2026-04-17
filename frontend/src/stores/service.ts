@@ -31,11 +31,11 @@ export const useServiceStore = defineStore('service', () => {
     return await createServiceOrder(data)
   }
 
-  async function fetchMyOrders(params?: { page?: number; size?: number }) {
+  async function fetchMyOrders(params?: { page?: number; size?: number; status?: string }) {
     loading.value = true
     try {
       const result = await getMyOrders({ page: 1, size: 10, ...params })
-      myOrders.value = result.list as ServiceOrder[]
+      myOrders.value = (result.list ?? result.records ?? []) as ServiceOrder[]
       return result
     } finally {
       loading.value = false

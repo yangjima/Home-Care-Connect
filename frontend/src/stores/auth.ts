@@ -3,7 +3,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { login as apiLogin, register as apiRegister, getUserInfo } from '@/api/auth'
+import { login as apiLogin, registerByEmail as apiRegisterByEmail, getUserInfo } from '@/api/auth'
 import type { User } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -25,25 +25,22 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email: string, password: string) {
-    const result = await apiLogin({ email, password })
+    const result = await apiLogin({ username: email, password })
     accessToken.value = result.accessToken
     refreshToken.value = result.refreshToken
-    userInfo.value = result.user as User
+    userInfo.value = (result.user as User) || null
 
     localStorage.setItem('access_token', result.accessToken)
     localStorage.setItem('refresh_token', result.refreshToken)
-    localStorage.setItem('user_info', JSON.stringify(result.user))
+    if (result.user) {
+      localStorage.setItem('user_info', JSON.stringify(result.user))
+    }
   }
 
-  async function register(email: string, password: string, confirmPassword: string) {
-    const result = await apiRegister({ email, password, confirmPassword })
-    accessToken.value = result.accessToken
-    refreshToken.value = result.refreshToken
-    userInfo.value = result.user as User
-
-    localStorage.setItem('access_token', result.accessToken)
-    localStorage.setItem('refresh_token', result.refreshToken)
-    localStorage.setItem('user_info', JSON.stringify(result.user))
+  async function register(email: string, code: string, password: string, confirmPassword: string) {
+    await apiRegisterByEmail({ email, code, password, confirmPassword })
+    await login(email, password)
+    await fetchUserInfo()
   }
 
   async function fetchUserInfo() {
@@ -65,6 +62,15 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user_info')
   }
 
+  function setUserInfo(user: User | null) {
+    userInfo.value = user
+    if (user) {
+      localStorage.setItem('user_info', JSON.stringify(user))
+    } else {
+      localStorage.removeItem('user_info')
+    }
+  }
+
   return {
     accessToken,
     refreshToken,
@@ -74,6 +80,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     fetchUserInfo,
+    setUserInfo,
     logout,
   }
 })

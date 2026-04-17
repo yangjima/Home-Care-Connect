@@ -19,22 +19,27 @@ public class ServiceType {
 
     private String description;
 
+    @TableField("category")
+    private String category;
+
+    @TableField("base_price")
     private BigDecimal price;
 
     private String unit;
 
     private String icon;
 
-    private Integer sortOrder;
+    private Integer status;
 
-    private String status;
-
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @TableLogic
+    @TableField(exist = false)
+    private Integer sortOrder;
+
+    @TableField(exist = false)
     private Integer deleted;
 }

@@ -32,7 +32,16 @@ public class TokenResponse {
      */
     private long expiresIn;
 
+    /**
+     * 登录用户信息（可选）
+     */
+    private UserResponse user;
+
     public static TokenResponse of(String accessToken, String refreshToken, long expiresIn) {
-        return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn);
+        return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, null);
+    }
+
+    public static TokenResponse of(String accessToken, String refreshToken, long expiresIn, UserResponse user) {
+        return new TokenResponse(accessToken, refreshToken, "Bearer", expiresIn, user);
     }
 }

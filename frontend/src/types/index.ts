@@ -11,7 +11,8 @@ export interface PageParams {
 
 // 分页结果
 export interface PageResult<T> {
-  list: T[]
+  list?: T[]
+  records?: T[]
   total: number
   page: number
   size: number
@@ -52,7 +53,7 @@ export interface Property {
   decoration: string
   description?: string
   images?: string[]
-  status: number
+  status: number | string
   createTime?: string
 }
 
@@ -104,8 +105,8 @@ export interface ServiceOrder {
   serviceTime: string
   duration?: number
   totalAmount: number
-  status: number
-  payStatus: number
+  status: number | string
+  payStatus: number | string | null
   payMethod?: string
   payTime?: string
   remark?: string

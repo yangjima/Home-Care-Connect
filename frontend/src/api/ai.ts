@@ -1,13 +1,29 @@
 /**
  * AI 聊天 API
  */
-import { get, del } from '@/utils/request'
+import { get, post, del } from '@/utils/request'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000'
+export interface AIChatResponse {
+  intent: 'property' | 'service' | 'procurement' | 'general'
+  reply: string
+  data?: Record<string, unknown>
+  redirect?: string | null
+  session_id: string
+}
+
+function getWsBaseUrl() {
+  const envUrl = import.meta.env.VITE_WS_URL as string | undefined
+  if (envUrl) return envUrl
+
+  if (typeof window === 'undefined') return 'ws://127.0.0.1:8080'
+  const isHttps = window.location.protocol === 'https:'
+  const wsProtocol = isHttps ? 'wss:' : 'ws:'
+  return `${wsProtocol}//${window.location.host}`
+}
 
 // HTTP 对话
 export function chat(message: string, sessionId: string = 'default') {
-  return get<{ response: string; session_id: string }>('/ai/chat', { message, session_id: sessionId })
+  return post<AIChatResponse>('/ai/chat', { message, session_id: sessionId })
 }
 
 // 获取会话历史
@@ -22,7 +38,8 @@ export function clearSession(sessionId: string) {
 
 // 创建 WebSocket 连接
 export function createChatWebSocket(sessionId: string, onMessage: (data: object) => void, onError?: (e: Event) => void) {
-  const ws = new WebSocket(`${WS_URL}/api/ai/ws/chat?session_id=${sessionId}`)
+  const wsBase = getWsBaseUrl()
+  const ws = new WebSocket(`${wsBase}/api/ai/ws/chat?session_id=${encodeURIComponent(sessionId)}`)
 
   ws.onopen = () => {
     console.log('WebSocket 连接已建立')

@@ -73,11 +73,11 @@ public class ViewingController {
      */
     @GetMapping
     public Result<PageResult<ViewingResponse>> listViewings(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) Long propertyId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String status) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "propertyId", required = false) Long propertyId,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "status", required = false) String status) {
         var result = propertyService.listViewings(page, pageSize, propertyId, userId, status);
         return Result.success(result);
     }

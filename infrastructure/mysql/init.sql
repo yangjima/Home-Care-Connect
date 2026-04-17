@@ -29,16 +29,20 @@ CREATE TABLE IF NOT EXISTS sys_user (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
     username        VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名/账号',
     password        VARCHAR(255) NOT NULL COMMENT '密码（BCrypt加密）',
-    phone           VARCHAR(20) NOT NULL UNIQUE COMMENT '手机号',
-    role            ENUM('admin', 'store_manager', 'service_staff', 'distributor', 'user', 'supplier') NOT NULL DEFAULT 'user' COMMENT '角色',
+    real_name       VARCHAR(100) COMMENT '真实姓名',
+    gender          VARCHAR(10) COMMENT '性别：male/female',
+    phone           VARCHAR(20) UNIQUE COMMENT '手机号',
+    email           VARCHAR(100) UNIQUE COMMENT '邮箱',
+    role            ENUM('admin', 'store_manager', 'service_staff', 'distributor', 'user', 'supplier', 'tenant') NOT NULL DEFAULT 'user' COMMENT '角色',
     avatar          VARCHAR(255) COMMENT '头像URL',
     store_id        BIGINT COMMENT '所属门店（店长/服务人员）',
-    status          TINYINT DEFAULT 1 COMMENT '状态：1=正常 0=禁用',
+    status          VARCHAR(20) NOT NULL DEFAULT 'active' COMMENT '状态：active/inactive/banned',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_role (role),
     INDEX idx_store (store_id),
     INDEX idx_phone (phone),
+    INDEX idx_email (email),
     FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 

@@ -118,7 +118,7 @@ const rules = {
   ],
   captcha: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 4, message: '验证码为 4 位数字', trigger: 'blur' },
+    { len: 6, message: '验证码为 6 位数字', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请设置密码', trigger: 'blur' },
@@ -174,7 +174,7 @@ async function handleRegister() {
 
   loading.value = true
   try {
-    await authStore.register(form.email, form.password, form.confirmPassword)
+    await authStore.register(form.email, form.captcha, form.password, form.confirmPassword)
     ElMessage.success('注册成功，欢迎加入居服通！')
     router.push('/home')
   } catch (e) {

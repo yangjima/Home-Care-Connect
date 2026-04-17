@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +52,11 @@ public class PropertyServiceImpl implements PropertyService {
         Property property = new Property();
         BeanUtils.copyProperties(request, property);
         property.setOwnerId(userId);
-        property.setStatus("draft");
+        // 兼容前端未传 storeId 的场景，避免 DB 非空约束导致新增失败
+        if (property.getStoreId() == null) {
+            property.setStoreId(1L);
+        }
+        property.setStatus("vacant");
         property.setViewCount(0);
         property.setIsRecommended(false);
 
@@ -139,13 +142,12 @@ public class PropertyServiceImpl implements PropertyService {
 
         Page<Property> pageParam = new Page<>(page, pageSize);
         LambdaQueryWrapper<Property> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Property::getDeleted, 0);
 
         if (status != null && !status.isEmpty()) {
             wrapper.eq(Property::getStatus, status);
         } else {
-            // 默认只显示已发布的
-            wrapper.eq(Property::getStatus, "published");
+            // 默认只显示可出租房源
+            wrapper.eq(Property::getStatus, "vacant");
         }
 
         if (propertyType != null && !propertyType.isEmpty()) {
@@ -173,8 +175,8 @@ public class PropertyServiceImpl implements PropertyService {
             );
         }
 
-        wrapper.orderByDesc(Property::getIsRecommended)
-                .orderByDesc(Property::getPublishedAt);
+        wrapper.orderByDesc(Property::getViewCount)
+                .orderByDesc(Property::getCreateTime);
 
         Page<Property> result = propertyRepository.selectPage(pageParam, wrapper);
         List<PropertyResponse> records = result.getRecords().stream()
@@ -190,8 +192,8 @@ public class PropertyServiceImpl implements PropertyService {
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        property.setStatus("published");
-        property.setPublishedAt(LocalDateTime.now());
+        property.setStatus("vacant");
+        property.setPublishedAt(null);
         propertyRepository.updateById(property);
         log.info("发布房产: id={}", id);
         return toPropertyResponse(property);
@@ -203,7 +205,7 @@ public class PropertyServiceImpl implements PropertyService {
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        property.setStatus("offline");
+        property.setStatus("reserved");
         propertyRepository.updateById(property);
         log.info("下架房产: id={}", id);
         return toPropertyResponse(property);
@@ -300,7 +302,6 @@ public class PropertyServiceImpl implements PropertyService {
 
         Page<PropertyViewing> pageParam = new Page<>(page, pageSize);
         LambdaQueryWrapper<PropertyViewing> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PropertyViewing::getDeleted, 0);
 
         if (propertyId != null) {
             wrapper.eq(PropertyViewing::getPropertyId, propertyId);
@@ -344,7 +345,7 @@ public class PropertyServiceImpl implements PropertyService {
 
         for (int i = 0; i < imageUrls.size(); i++) {
             String url = imageUrls.get(i);
-            String type = (i == 0 || url.equals(coverImage)) ? "cover" : "room";
+            String type = (i == 0 || url.equals(coverImage)) ? "cover" : "detail";
 
             PropertyImage image = new PropertyImage();
             image.setPropertyId(propertyId);

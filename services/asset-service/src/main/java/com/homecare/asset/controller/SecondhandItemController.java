@@ -60,12 +60,12 @@ public class SecondhandItemController {
      */
     @GetMapping
     public Result<PageResult<SecondhandItemResponse>> list(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String condition,
-            @RequestParam(required = false) String status) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "condition", required = false) String condition,
+            @RequestParam(value = "status", required = false) String status) {
         var result = itemService.list(page, pageSize, keyword, category, condition, status);
         return Result.success(result);
     }
@@ -85,8 +85,8 @@ public class SecondhandItemController {
      */
     @GetMapping("/my")
     public Result<PageResult<SecondhandItemResponse>> listMyItems(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
             HttpServletRequest httpRequest) {
         Long userId = getUserId(httpRequest);
         var result = itemService.listByUserId(userId, page, pageSize);

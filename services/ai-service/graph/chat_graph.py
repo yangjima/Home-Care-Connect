@@ -78,13 +78,13 @@ def create_chat_graph():
     return graph
 
 
-def router_node(state: ChatState) -> ChatState:
+async def router_node(state: ChatState) -> ChatState:
     """路由节点"""
     messages = state["messages"]
     user_message = messages[-1].content
     user_id = state.get("user_id")
 
-    route = route_query(user_message, user_id)
+    route = await route_query(user_message, user_id)
 
     return {
         **state,

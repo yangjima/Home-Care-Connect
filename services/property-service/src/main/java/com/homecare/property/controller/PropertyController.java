@@ -76,15 +76,15 @@ public class PropertyController {
      */
     @GetMapping
     public Result<com.homecare.property.common.PageResult<PropertyResponse>> listProperties(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String propertyType,
-            @RequestParam(required = false) String district,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long ownerId) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "propertyType", required = false) String propertyType,
+            @RequestParam(value = "district", required = false) String district,
+            @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
+            @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "ownerId", required = false) Long ownerId) {
 
         var result = propertyService.listProperties(page, pageSize, keyword,
                 propertyType, district, minPrice, maxPrice, status, ownerId);
@@ -115,7 +115,7 @@ public class PropertyController {
     @PostMapping("/{id}/recommend")
     public Result<PropertyResponse> recommendProperty(
             @PathVariable Long id,
-            @RequestParam boolean recommended) {
+            @RequestParam("recommended") boolean recommended) {
         PropertyResponse response = propertyService.recommendProperty(id, recommended);
         return Result.success(recommended ? "推荐成功" : "取消推荐成功", response);
     }

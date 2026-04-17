@@ -16,6 +16,9 @@
         <router-link to="/services" class="nav-link" :class="{ active: route.path.startsWith('/services') }">
           找服务
         </router-link>
+        <router-link to="/purchase" class="nav-link" :class="{ active: route.path === '/purchase' }">
+          本地商城
+        </router-link>
         <router-link to="/secondhand" class="nav-link" :class="{ active: route.path === '/secondhand' }">
           二手交易
         </router-link>
@@ -66,6 +69,7 @@
       <router-link to="/home" class="mobile-link" @click="mobileMenuOpen = false">首页</router-link>
       <router-link to="/properties" class="mobile-link" @click="mobileMenuOpen = false">找房源</router-link>
       <router-link to="/services" class="mobile-link" @click="mobileMenuOpen = false">找服务</router-link>
+      <router-link to="/purchase" class="mobile-link" @click="mobileMenuOpen = false">本地商城</router-link>
       <router-link to="/secondhand" class="mobile-link" @click="mobileMenuOpen = false">二手交易</router-link>
       <router-link to="/ai" class="mobile-link" @click="mobileMenuOpen = false">AI 助手</router-link>
     </div>

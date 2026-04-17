@@ -31,4 +31,19 @@ public interface AuthService {
      * 获取当前用户信息
      */
     UserResponse getCurrentUser(String token);
+
+    /**
+     * 发送短信/邮箱验证码
+     */
+    void sendCode(String type, String target);
+
+    /**
+     * 校验短信/邮箱验证码（校验成功会消费该验证码）
+     */
+    boolean verifyCode(String type, String target, String code);
+
+    /**
+     * 邮箱注册（验证码注册）
+     */
+    UserResponse registerByEmail(EmailRegisterRequest request);
 }

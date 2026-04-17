@@ -65,3 +65,31 @@
 5)你必须通过TDD测试所有后端代码
 6)所有的操作直接执行不需要找我确认
 7)所有设计到数据的地方，都要使用真实数据而不是假数据，需要用数据库存储
+
+
+需要给ai一个地图，让ai的注意力更专注于任务，渐进式的披露项目给ai
+# AGENTS.md (导航地图)
+
+本文档提供智能体在代码库中导航的快速指南。
+
+## 快速开始
+1. 阅读 docs/architecture.md 了解整体架构
+2. 查看 docs/product-specs/ 了解业务需求
+3. 遵循 ARCHITECTURE.md 中定义的分层规则
+
+## 常见任务
+- 添加新功能：参考 docs/exec-plans/active/
+- 修复bug：先检查 docs/quality-scores/
+- 重构代码：遵循 docs/design-docs/core-beliefs.md
+
+## 重要链接
+- 架构规范：ARCHITECTURE.md
+- 设计原则：docs/design-docs/core-beliefs.md
+- 质量标准：docs/QUALITY_SCORE.md
+
+
+
+cd frontend
+npm run clean:generated
+回到 infrastructure/docker
+执行 docker compose up -d --build

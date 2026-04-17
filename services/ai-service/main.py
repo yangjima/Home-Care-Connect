@@ -8,10 +8,12 @@ from contextlib import asynccontextmanager
 import json
 import logging
 from typing import AsyncGenerator
+from pydantic import BaseModel
 
 from graph.chat_graph import create_chat_graph, ChatState
 from agents.router import route_query
 from config import settings
+from langchain_core.messages import HumanMessage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,10 +68,49 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str = "default"
+
+
 @app.get("/health")
 async def health_check():
     """健康检查接口"""
     return {"status": "ok", "service": "ai-service"}
+
+
+def _resolve_redirect(intent: str) -> str | None:
+    mapping = {
+        "property": "/properties",
+        "service": "/services",
+        "procurement": "/purchase",
+    }
+    return mapping.get(intent)
+
+
+async def _invoke_chat_graph(message: str, session_id: str, user_id=None) -> dict:
+    graph = create_chat_graph()
+    result = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content=message)],
+            "session_id": session_id,
+            "user_id": user_id,
+        },
+        config={"configurable": {"thread_id": session_id}},
+    )
+    intent = result.get("route", "general")
+    reply = result.get("response", "")
+    if not reply:
+        last_msg = result["messages"][-1]
+        reply = getattr(last_msg, "content", str(last_msg))
+
+    return {
+        "intent": intent,
+        "reply": reply,
+        "data": result.get("context", {}),
+        "redirect": _resolve_redirect(intent),
+        "session_id": session_id,
+    }
 
 
 @app.get("/api/ai/chat")
@@ -77,19 +118,21 @@ async def chat_get(
     message: str = Query(..., description="用户消息"),
     session_id: str = Query(default="default", description="会话 ID"),
 ):
-    """HTTP GET 方式的简单对话接口（用于测试）"""
+    """HTTP GET 方式对话接口（兼容旧版调用）"""
     try:
-        graph = create_chat_graph()
-        result = await graph.ainvoke(
-            {
-                "messages": [("user", message)],
-                "session_id": session_id,
-                "user_id": None,
-            },
-            config={"configurable": {"thread_id": session_id}},
-        )
-        response = result["messages"][-1].content
-        return {"code": 200, "message": "success", "data": {"response": response, "session_id": session_id}}
+        payload = await _invoke_chat_graph(message, session_id)
+        return {"code": 200, "message": "success", "data": payload}
+    except Exception as e:
+        logger.error(f"对话处理失败: {e}")
+        return {"code": 500, "message": str(e), "data": None}
+
+
+@app.post("/api/ai/chat")
+async def chat_post(req: ChatRequest):
+    """HTTP POST 方式对话接口（设计文档标准接口）"""
+    try:
+        payload = await _invoke_chat_graph(req.message, req.session_id)
+        return {"code": 200, "message": "success", "data": payload}
     except Exception as e:
         logger.error(f"对话处理失败: {e}")
         return {"code": 500, "message": str(e), "data": None}
@@ -162,14 +205,22 @@ async def stream_graph_response(graph, user_message: str, session_id: str, user_
     try:
         result = await graph.ainvoke(
             {
-                "messages": [("user", user_message)],
+                "messages": [HumanMessage(content=user_message)],
                 "session_id": session_id,
                 "user_id": user_id,
             },
             config={"configurable": {"thread_id": session_id}},
         )
 
-        response_content = result["messages"][-1].content
+        response_content = result.get("response", "")
+        if not response_content:
+            last_msg = result["messages"][-1]
+            if hasattr(last_msg, "content"):
+                response_content = last_msg.content
+            elif isinstance(last_msg, (tuple, list)) and len(last_msg) >= 2:
+                response_content = last_msg[1]
+            else:
+                response_content = str(last_msg)
         last_agent = result.get("last_agent", "response")
 
         # 模拟流式输出（逐字发送）

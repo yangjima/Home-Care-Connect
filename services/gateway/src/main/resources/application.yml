@@ -9,33 +9,33 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/users/**
+            - Path=/api/user/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
         - id: property-service
           uri: lb://property-service
           predicates:
-            - Path=/api/properties/**,/api/viewings/**
+            - Path=/api/property/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
         - id: service-order-service
           uri: lb://service-order-service
           predicates:
-            - Path=/api/orders/**,/api/reviews/**,/api/service-types/**
+            - Path=/api/service/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
         - id: asset-service
           uri: lb://asset-service
           predicates:
-            - Path=/api/procurement-products/**,/api/secondhand-items/**
+            - Path=/api/asset/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
         - id: ai-service
-          uri: http://${AI_HOST:127.0.0.1}:${AI_PORT:8000}
+          uri: http://ai-service:8000
           predicates:
             - Path=/api/ai/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=0
 
       # Actuator 健康检查路由（不走 StripPrefix）
       discovery-client:

@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chat, createChatWebSocket } from '@/api/ai'
 import type { ChatMessage, ChatSession } from '@/types'
+import router from '@/router'
 
 export const useAIStore = defineStore('ai', () => {
   const sessions = ref<ChatSession[]>([])
@@ -52,13 +53,18 @@ export const useAIStore = defineStore('ai', () => {
 
     loading.value = true
     try {
-      // 使用 HTTP API（简单方式）
       const result = await chat(content, currentSessionId.value)
+      const assistantReply = result.reply || '抱歉，我暂时无法回答这个问题。'
       addMessage({
         role: 'assistant',
-        content: result.response,
-        agent: currentAgent.value,
+        content: assistantReply,
+        agent: result.intent || currentAgent.value,
       })
+
+      // 按设计文档：识别出业务意图时跳转对应页面
+      if (result.redirect) {
+        await router.push(result.redirect)
+      }
     } catch (e) {
       addMessage({
         role: 'assistant',

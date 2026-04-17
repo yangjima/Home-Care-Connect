@@ -63,7 +63,6 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         order.setDuration(request.getDuration());
         order.setTotalAmount(serviceType.getPrice());
         order.setStatus("pending");
-        order.setPayStatus("unpaid");
         order.setRemark(request.getRemark());
 
         orderRepository.insert(order);
@@ -84,9 +83,9 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
             String status, String payStatus) {
         LambdaQueryWrapper<ServiceOrder> wrapper = new LambdaQueryWrapper<>();
         if (userId != null) wrapper.eq(ServiceOrder::getUserId, userId);
-        if (storeId != null) wrapper.eq(ServiceOrder::getStoreId, storeId);
+        // service_order 表无 store_id 字段，保持接口兼容但忽略该筛选条件
         if (status != null) wrapper.eq(ServiceOrder::getStatus, status);
-        if (payStatus != null) wrapper.eq(ServiceOrder::getPayStatus, payStatus);
+        // service_order 表无 pay_status 字段，保持接口兼容但忽略该筛选条件
         wrapper.orderByDesc(ServiceOrder::getCreateTime);
 
         Page<ServiceOrder> pageResult = orderRepository.selectPage(
@@ -107,7 +106,8 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        if (!"pending".equals(order.getStatus()) && !"confirmed".equals(order.getStatus())) {
+        if (!"pending".equals(order.getStatus()) && !"assigned".equals(order.getStatus())
+                && !"accepted".equals(order.getStatus()) && !"in_progress".equals(order.getStatus())) {
             throw new BusinessException(400, "当前状态无法取消订单");
         }
 
@@ -129,7 +129,7 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
             throw new BusinessException(400, "当前状态无法确认订单");
         }
 
-        order.setStatus("confirmed");
+        order.setStatus("assigned");
         orderRepository.updateById(order);
         return toResponse(order);
     }
@@ -141,11 +141,13 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        if (!"confirmed".equals(order.getStatus())) {
+        if (!"accepted".equals(order.getStatus()) && !"in_progress".equals(order.getStatus())
+                && !"assigned".equals(order.getStatus())) {
             throw new BusinessException(400, "当前状态无法完成订单");
         }
 
         order.setStatus("completed");
+        order.setCompletedAt(LocalDateTime.now());
         orderRepository.updateById(order);
         return toResponse(order);
     }
@@ -157,13 +159,12 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
-        if (!"unpaid".equals(order.getPayStatus())) {
-            throw new BusinessException(400, "订单已支付");
+        if (!"pending".equals(order.getStatus())) {
+            throw new BusinessException(400, "当前状态无法支付");
         }
 
-        order.setPayStatus("paid");
-        order.setPayMethod(payMethod);
-        order.setPayTime(LocalDateTime.now());
+        // service_order 表无支付相关字段，支付后推进为 accepted
+        order.setStatus("accepted");
         orderRepository.updateById(order);
         return toResponse(order);
     }

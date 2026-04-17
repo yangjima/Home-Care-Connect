@@ -17,3 +17,8 @@ coverage
 *.test.ts
 *.spec.ts
 vite.config.ts.timestamp-*
+*.d.ts
+src/**/*.d.ts
+src/**/*.js
+node_modules/.tmp/
+

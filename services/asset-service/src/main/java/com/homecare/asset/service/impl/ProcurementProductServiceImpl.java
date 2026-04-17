@@ -12,6 +12,7 @@ import com.homecare.asset.service.ProcurementProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.stream.Collectors;
 
@@ -37,7 +38,7 @@ public class ProcurementProductServiceImpl implements ProcurementProductService 
         product.setImage(request.getImage());
         product.setImages(request.getImages());
         product.setStoreId(storeId);
-        product.setStatus("active");
+        product.setStatus("1");
 
         productRepository.insert(product);
         return toResponse(product);
@@ -77,13 +78,13 @@ public class ProcurementProductServiceImpl implements ProcurementProductService 
     public PageResult<ProcurementProductResponse> list(int page, int pageSize, String keyword,
             String category, String status) {
         LambdaQueryWrapper<ProcurementProduct> wrapper = new LambdaQueryWrapper<>();
-        if (keyword != null) {
+        if (StringUtils.hasText(keyword)) {
             wrapper.like(ProcurementProduct::getName, keyword)
                    .or()
                    .like(ProcurementProduct::getDescription, keyword);
         }
-        if (category != null) wrapper.eq(ProcurementProduct::getCategory, category);
-        if (status != null) wrapper.eq(ProcurementProduct::getStatus, status);
+        if (StringUtils.hasText(category)) wrapper.eq(ProcurementProduct::getCategory, category);
+        if (StringUtils.hasText(status)) wrapper.eq(ProcurementProduct::getStatus, status);
         wrapper.orderByDesc(ProcurementProduct::getCreateTime);
 
         Page<ProcurementProduct> pageResult = productRepository.selectPage(

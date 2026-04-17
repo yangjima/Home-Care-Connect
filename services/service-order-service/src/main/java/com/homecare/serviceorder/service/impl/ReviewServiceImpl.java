@@ -42,7 +42,8 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         LambdaQueryWrapper<ServiceReview> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceReview::getOrderId, request.getOrderId());
+        wrapper.eq(ServiceReview::getOrderId, request.getOrderId())
+                .eq(ServiceReview::getTargetType, "service");
         if (reviewRepository.selectCount(wrapper) > 0) {
             throw new BusinessException(400, "该订单已评价");
         }
@@ -55,6 +56,7 @@ public class ReviewServiceImpl implements ReviewService {
         review.setRating(request.getRating());
         review.setContent(request.getContent());
         review.setImages(request.getImages());
+        review.setTargetType("service");
         review.setIsAnonymous(request.getIsAnonymous() != null ? request.getIsAnonymous() : 0);
 
         reviewRepository.insert(review);
@@ -76,8 +78,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public PageResult<ReviewResponse> listReviews(int page, int pageSize, Long staffId, Long storeId) {
         LambdaQueryWrapper<ServiceReview> wrapper = new LambdaQueryWrapper<>();
-        if (staffId != null) wrapper.eq(ServiceReview::getStaffId, staffId);
-        if (storeId != null) wrapper.eq(ServiceReview::getStoreId, storeId);
+        wrapper.eq(ServiceReview::getTargetType, "service");
         wrapper.orderByDesc(ServiceReview::getCreateTime);
 
         Page<ServiceReview> pageResult = reviewRepository.selectPage(
@@ -94,7 +95,8 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     public ReviewResponse getReviewByOrderId(Long orderId) {
         LambdaQueryWrapper<ServiceReview> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceReview::getOrderId, orderId);
+        wrapper.eq(ServiceReview::getOrderId, orderId)
+                .eq(ServiceReview::getTargetType, "service");
         ServiceReview review = reviewRepository.selectOne(wrapper);
         if (review == null) {
             throw new BusinessException(404, "评价不存在");
@@ -104,9 +106,17 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Double getStaffAverageRating(Long staffId) {
+        if (staffId == null) {
+            return 0.0;
+        }
         LambdaQueryWrapper<ServiceReview> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceReview::getStaffId, staffId);
-        var reviews = reviewRepository.selectList(wrapper);
+        wrapper.eq(ServiceReview::getTargetType, "service");
+        var reviews = reviewRepository.selectList(wrapper).stream()
+                .filter(r -> {
+                    ServiceOrder o = orderRepository.selectById(r.getOrderId());
+                    return o != null && staffId.equals(o.getStaffId());
+                })
+                .collect(Collectors.toList());
         if (reviews.isEmpty()) {
             return 0.0;
         }
@@ -116,9 +126,17 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public int getStaffReviewCount(Long staffId) {
+        if (staffId == null) {
+            return 0;
+        }
         LambdaQueryWrapper<ServiceReview> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceReview::getStaffId, staffId);
-        return reviewRepository.selectCount(wrapper).intValue();
+        wrapper.eq(ServiceReview::getTargetType, "service");
+        return (int) reviewRepository.selectList(wrapper).stream()
+                .filter(r -> {
+                    ServiceOrder o = orderRepository.selectById(r.getOrderId());
+                    return o != null && staffId.equals(o.getStaffId());
+                })
+                .count();
     }
 
     private void updateStaffRating(Long staffId) {
@@ -129,7 +147,7 @@ public class ReviewServiceImpl implements ReviewService {
         Double avgRating = getStaffAverageRating(staffId);
         int reviewCount = getStaffReviewCount(staffId);
 
-        staff.setStarRating((int) Math.round(avgRating));
+        staff.setStarRating(java.math.BigDecimal.valueOf(avgRating));
         staff.setOrderCount(reviewCount);
         staffRepository.updateById(staff);
     }
@@ -147,8 +165,10 @@ public class ReviewServiceImpl implements ReviewService {
         response.setIsAnonymous(review.getIsAnonymous());
         response.setCreateTime(review.getCreateTime());
 
-        if (review.getStaffId() != null) {
-            ServiceStaff staff = staffRepository.selectById(review.getStaffId());
+        ServiceOrder order = orderRepository.selectById(review.getOrderId());
+        if (order != null && order.getStaffId() != null) {
+            response.setStaffId(order.getStaffId());
+            ServiceStaff staff = staffRepository.selectById(order.getStaffId());
             if (staff != null) {
                 response.setStaffName(staff.getName());
             }

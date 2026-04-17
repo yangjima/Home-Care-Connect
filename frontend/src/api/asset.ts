@@ -7,39 +7,41 @@ import type { PageParams, PageResult } from '@/types'
 // ========== 采购商品 ==========
 
 export function getProcurementList(params: PageParams & { category?: string }) {
-  return get<PageResult<object>>('/procurement-products', params)
+  const { page, size, ...rest } = params
+  return get<PageResult<object>>('/asset/procurement-products', { page, pageSize: size, ...rest })
 }
 
 export function getProcurementDetail(id: number) {
-  return get<object>(`/procurement-products/${id}`)
+  return get<object>(`/asset/procurement-products/${id}`)
 }
 
 // ========== 二手物品 ==========
 
 export function getSecondhandList(params: PageParams & { category?: string; condition?: string }) {
-  return get<PageResult<object>>('/secondhand-items', params)
+  const { page, size, ...rest } = params
+  return get<PageResult<object>>('/asset/secondhand-items', { page, pageSize: size, ...rest })
 }
 
 export function getSecondhandDetail(id: number) {
-  return get<object>(`/secondhand-items/${id}`)
+  return get<object>(`/asset/secondhand-items/${id}`)
 }
 
 export function createSecondhandItem(data: object) {
-  return post<object>('/secondhand-items', data)
+  return post<object>('/asset/secondhand-items', data)
 }
 
 export function updateSecondhandItem(id: number, data: object) {
-  return put<object>(`/secondhand-items/${id}`, data)
+  return put<object>(`/asset/secondhand-items/${id}`, data)
 }
 
-export async function deleteSecondhandItem(id: number) {
-  return await (await import('@/utils/request')).default.delete(`/secondhand-items/${id}`)
+export function deleteSecondhandItem(id: number) {
+  return del(`/asset/secondhand-items/${id}`)
 }
 
 export function getMySecondhandItems(params?: PageParams) {
-  return get<PageResult<object>>('/secondhand-items/my', params)
-}
-
-export function getSecondhandCategories() {
-  return get<string[]>('/secondhand/categories')
+  if (!params) {
+    return get<PageResult<object>>('/asset/secondhand-items/my')
+  }
+  const { page, size, ...rest } = params
+  return get<PageResult<object>>('/asset/secondhand-items/my', { page, pageSize: size, ...rest })
 }

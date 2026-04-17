@@ -43,9 +43,6 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -59,6 +56,17 @@ logging:
   level:
     com.homecare.user: DEBUG
     com.homecare.common: DEBUG
+
+# 邮件验证码发送配置（预留：你可以在 Nacos/shared.yaml 或环境变量里覆盖）
+app:
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    from: ${MAIL_FROM:}
+    ssl: ${MAIL_SSL:true}
 
 # Actuator 健康检查配置
 management:

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc --noEmit && vite build",
+    "clean:generated": "node -e \"const fs=require('fs');const p=require('path');const exts=new Set(['.d.ts','.js']);const walk=(d)=>{for(const n of fs.readdirSync(d,{withFileTypes:true})){const f=p.join(d,n.name);if(n.isDirectory())walk(f);else if(exts.has(p.extname(n.name)) && (n.name.endsWith('.vue.d.ts') || n.name.endsWith('.vue.js') || ['App.vue.d.ts','main.d.ts','main.js'].includes(n.name) || ['api','stores','router','types','utils','i18n','views','components'].some(seg=>f.includes(p.sep+'src'+p.sep+seg+p.sep)))) fs.rmSync(f,{force:true});}};for(const d of ['src','node_modules/.tmp']){if(fs.existsSync(d)){if(d.endsWith('.tmp')) fs.rmSync(d,{recursive:true,force:true}); else walk(d);}}\"",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "type-check": "vue-tsc --noEmit",

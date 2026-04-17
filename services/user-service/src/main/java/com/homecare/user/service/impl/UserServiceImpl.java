@@ -42,7 +42,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.selectOne(
                 new LambdaQueryWrapper<User>()
                         .eq(User::getUsername, username)
-                        .eq(User::getDeleted, 0)
         );
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -109,7 +108,6 @@ public class UserServiceImpl implements UserService {
     public PageResult<UserResponse> listUsers(int page, int pageSize, String role, String keyword) {
         Page<User> pageParam = new Page<>(page, pageSize);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getDeleted, 0);
 
         if (role != null && !role.isEmpty()) {
             wrapper.eq(User::getRole, role);
@@ -158,7 +156,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.selectCount(
                 new LambdaQueryWrapper<User>()
                         .eq(User::getUsername, username)
-                        .eq(User::getDeleted, 0)
         ) > 0;
     }
 
@@ -170,7 +167,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.selectCount(
                 new LambdaQueryWrapper<User>()
                         .eq(User::getPhone, phone)
-                        .eq(User::getDeleted, 0)
         ) > 0;
     }
 
@@ -182,7 +178,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.selectCount(
                 new LambdaQueryWrapper<User>()
                         .eq(User::getEmail, email)
-                        .eq(User::getDeleted, 0)
         ) > 0;
     }
 
@@ -194,7 +189,6 @@ public class UserServiceImpl implements UserService {
                 new LambdaQueryWrapper<User>()
                         .eq(User::getPhone, phone)
                         .ne(User::getId, excludeId)
-                        .eq(User::getDeleted, 0)
         ) > 0;
     }
 
@@ -206,7 +200,6 @@ public class UserServiceImpl implements UserService {
                 new LambdaQueryWrapper<User>()
                         .eq(User::getEmail, email)
                         .ne(User::getId, excludeId)
-                        .eq(User::getDeleted, 0)
         ) > 0;
     }
 

@@ -14,35 +14,35 @@ spring:
           predicates:
             - Path=/api/user/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
 
         - id: property-service
           uri: lb://property-service
           predicates:
             - Path=/api/property/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
 
         - id: service-order
-          uri: lb://service-order
+          uri: lb://service-order-service
           predicates:
             - Path=/api/service/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
 
         - id: asset-service
           uri: lb://asset-service
           predicates:
             - Path=/api/asset/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
 
         - id: ai-service
-          uri: lb://ai-service
+          uri: http://ai-service:8000
           predicates:
             - Path=/api/ai/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=0
 
         - id: minio-api
           uri: lb://minio

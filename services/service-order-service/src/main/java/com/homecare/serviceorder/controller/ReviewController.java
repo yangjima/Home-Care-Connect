@@ -46,10 +46,10 @@ public class ReviewController {
      */
     @GetMapping
     public Result<PageResult<ReviewResponse>> listReviews(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) Long staffId,
-            @RequestParam(required = false) Long storeId) {
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "staffId", required = false) Long staffId,
+            @RequestParam(value = "storeId", required = false) Long storeId) {
         var result = reviewService.listReviews(page, pageSize, staffId, storeId);
         return Result.success(result);
     }

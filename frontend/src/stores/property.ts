@@ -16,8 +16,8 @@ export const usePropertyStore = defineStore('property', () => {
     loading.value = true
     try {
       const result = await getPropertyList({ page: 1, size: 12, ...params })
-      propertyList.value = result.list as Property[]
-      totalCount.value = result.total
+      propertyList.value = (result.list ?? result.records ?? []) as Property[]
+      totalCount.value = Number(result.total ?? 0)
     } finally {
       loading.value = false
     }

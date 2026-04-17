@@ -25,14 +25,14 @@
 
         <div class="footer-contact">
           <h4>联系方式</h4>
-          <p>📧 support@homecare.cn</p>
-          <p>📞 400-888-8888</p>
-          <p>📍 北京市朝阳区科技园</p>
+          <p>📧 15194479717@163.com</p>
+          <p>📞 15194479717</p>
+          <p>📍 上海浦东科创园</p>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>© 2024 居服通 Home Care Connect. All rights reserved.</p>
+        <p>© 2026 居服通 Home Care Connect. All rights reserved.</p>
       </div>
     </div>
   </footer>

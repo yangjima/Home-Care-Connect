@@ -18,6 +18,7 @@ public class PropertyImage {
     /**
      * 所属房产ID
      */
+    @TableField("property_id")
     private Long propertyId;
 
     /**
@@ -35,9 +36,9 @@ public class PropertyImage {
      */
     private Integer sortOrder;
 
-    @TableLogic
+    @TableField(exist = false)
     private Integer deleted;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

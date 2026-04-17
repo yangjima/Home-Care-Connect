@@ -24,8 +24,8 @@ export const useSecondhandStore = defineStore('secondhand', () => {
     try {
       // keyword 参数透传，由后端处理
       const result = await getSecondhandList({ page: 1, size: 12, ...params })
-      itemList.value = result.list as SecondhandItem[]
-      totalCount.value = result.total
+      itemList.value = (result.list ?? result.records ?? []) as SecondhandItem[]
+      totalCount.value = Number(result.total ?? 0)
     } finally {
       loading.value = false
     }
@@ -56,7 +56,7 @@ export const useSecondhandStore = defineStore('secondhand', () => {
     loading.value = true
     try {
       const result = await getMySecondhandItems({ page: 1, size: 10, ...params })
-      myItems.value = result.list as SecondhandItem[]
+      myItems.value = (result.list ?? result.records ?? []) as SecondhandItem[]
       return result
     } finally {
       loading.value = false

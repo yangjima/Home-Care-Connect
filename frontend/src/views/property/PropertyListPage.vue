@@ -3,8 +3,13 @@
     <AppHeader />
     <div class="container">
       <div class="page-header">
-        <h1>房源列表</h1>
-        <p>找到您理想中的家</p>
+        <div>
+          <h1>房源列表</h1>
+          <p>找到您理想中的家</p>
+        </div>
+        <el-button type="primary" @click="goPublishProperty">
+          发布房源
+        </el-button>
       </div>
 
       <div class="filters">
@@ -49,15 +54,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import PropertyCard from '@/components/property/PropertyCard.vue'
 import { usePropertyStore } from '@/stores/property'
+import { useAuthStore } from '@/stores/auth'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
 const propertyStore = usePropertyStore()
+const authStore = useAuthStore()
 
 const keyword = ref('')
 const filterType = ref('')
@@ -85,9 +94,21 @@ async function fetchList() {
     })
     propertyList.value = propertyStore.propertyList
     total.value = propertyStore.totalCount
+  } catch {
+    propertyList.value = []
+    total.value = 0
+    ElMessage.error('房源加载失败，请稍后重试')
   } finally {
     loading.value = false
   }
+}
+
+function goPublishProperty() {
+  if (!authStore.isLoggedIn) {
+    router.push('/auth/login')
+    return
+  }
+  router.push('/user/properties')
 }
 
 onMounted(() => {
@@ -108,6 +129,9 @@ onMounted(() => {
 
 .page-header {
   padding: var(--spacing-xl) 0 var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   h1 {
     font-size: 28px;

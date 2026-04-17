@@ -2,6 +2,7 @@ package com.homecare.serviceorder.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -14,30 +15,41 @@ public class ServiceStaff {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("user_id")
     private Long userId;
 
+    @TableField(exist = false)
     private String name;
 
+    @TableField(exist = false)
     private String phone;
 
+    @TableField(exist = false)
     private String avatar;
 
+    @TableField("store_id")
     private Long storeId;
 
+    @TableField(exist = false)
     private Long serviceTypeId;
 
     private String status;
 
-    private Integer starRating;
+    @TableField("rating")
+    private BigDecimal starRating;
 
+    @TableField("total_orders")
     private Integer orderCount;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField("skills")
+    private String skills;
+
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @TableLogic
+    @TableField(exist = false)
     private Integer deleted;
 }

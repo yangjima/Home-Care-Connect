@@ -126,7 +126,7 @@ onMounted(async () => {
 })
 
 function contactAgent() {
-  ElMessage.info('请联系：400-888-8888')
+  ElMessage.info('请联系：15194479717')
 }
 
 async function handleBooking() {

@@ -2,25 +2,28 @@ package com.homecare.serviceorder.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 评价实体
  */
 @Data
-@TableName("service_review")
+@TableName("review")
 public class ServiceReview {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    @TableField("target_id")
     private Long orderId;
 
+    @TableField("user_id")
     private Long userId;
 
+    @TableField(exist = false)
     private Long staffId;
 
+    @TableField(exist = false)
     private Long storeId;
 
     private Integer rating;
@@ -29,14 +32,18 @@ public class ServiceReview {
 
     private String images;
 
+    @TableField("target_type")
+    private String targetType;
+
+    @TableField(exist = false)
     private Integer isAnonymous;
 
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @TableLogic
+    @TableField(exist = false)
     private Integer deleted;
 }
