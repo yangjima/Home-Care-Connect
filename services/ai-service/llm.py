@@ -5,12 +5,17 @@ import logging
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import ChatZhipuAI
 
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+# 某些部署不包含 Anthropic 依赖；按需导入避免启动失败
+try:
+    from langchain_anthropic import ChatAnthropic  # type: ignore
+except Exception:  # pragma: no cover
+    ChatAnthropic = None  # type: ignore
 
 # 缓存 LLM 实例
 _llm_instance: Optional[object] = None

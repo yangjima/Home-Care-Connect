@@ -23,7 +23,7 @@ WORKDIR /app
 
 RUN apk add --no-cache curl
 
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /app/target/gateway-1.0.0.jar app.jar
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser

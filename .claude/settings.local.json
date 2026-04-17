@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s /b d:\\\\code\\\\Home-Care-Connect\\\\*gateway*)",
+      "Bash(dir /s /b \"d:\\\\code\\\\Home-Care-Connect\\\\services\\\\gateway\")",
+      "Bash(docker build *)"
+    ]
+  }
+}

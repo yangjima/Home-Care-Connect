@@ -4,7 +4,6 @@ LangGraph 聊天图定义
 import logging
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.checkpoint.redis import RedisSaver
 from langgraph.graph import START
 
 from graph.state import ChatState
@@ -22,6 +21,9 @@ def create_checkpoint_saver():
     """创建检查点持久化器"""
     if settings.USE_REDIS_CHECKPOINT and settings.dashscope_configured:
         try:
+            # 某些 langgraph 版本不包含 redis checkpointer；运行时探测并降级
+            from langgraph.checkpoint.redis import RedisSaver  # type: ignore
+
             redis_saver = RedisSaver(
                 host=settings.REDIS_HOST,
                 port=settings.REDIS_PORT,
@@ -30,6 +32,8 @@ def create_checkpoint_saver():
             )
             logger.info("使用 Redis 检查点持久化")
             return redis_saver
+        except ImportError as e:
+            logger.warning(f"当前 langgraph 版本不支持 Redis 检查点，使用内存检查点: {e}")
         except Exception as e:
             logger.warning(f"Redis 检查点初始化失败，使用内存检查点: {e}")
     return MemorySaver()

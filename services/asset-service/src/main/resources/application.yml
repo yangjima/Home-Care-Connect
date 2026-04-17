@@ -2,7 +2,7 @@ spring:
   application:
     name: asset-service
   config:
-    import: optional:nacos:${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}/asset-service.yaml
+    import: optional:nacos:asset-service.yaml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:homecare}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
