@@ -1,7 +1,8 @@
 /**
  * Axios HTTP 客户端封装
  */
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
+import axios from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 

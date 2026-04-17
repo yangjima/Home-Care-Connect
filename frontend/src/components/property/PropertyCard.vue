@@ -1,7 +1,7 @@
 <template>
   <div class="property-card" @click="$router.push(`/properties/${property.id}`)">
     <div class="card-image">
-      <img :src="property.image || '/placeholder-property.jpg'" :alt="property.title" />
+      <img :src="(property.images && property.images[0]) || '/placeholder-property.jpg'" :alt="property.title" />
       <span class="card-tag">{{ property.type || '普通住宅' }}</span>
     </div>
     <div class="card-body">

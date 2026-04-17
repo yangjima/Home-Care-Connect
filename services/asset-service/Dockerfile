@@ -6,10 +6,14 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-COPY pom.xml .
+# 复制父 POM 并安装到本地 Maven 仓库
+COPY pom.xml ./parent-pom.xml
+RUN mvn install -B -f parent-pom.xml -N
+
+COPY asset-service/pom.xml ./pom.xml
 RUN mvn dependency:go-offline -B
 
-COPY src ./src
+COPY asset-service/src ./src
 RUN mvn clean package -DskipTests -B
 
 # ========== 运行时镜像 ==========

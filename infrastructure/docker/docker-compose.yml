@@ -26,7 +26,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_PASSWORD:-HomeCare2026@DB}"]
@@ -121,8 +121,8 @@ services:
   # ----------------------------------------
   gateway:
     build:
-      context: ../../services/gateway
-      dockerfile: Dockerfile
+      context: ../../services
+      dockerfile: gateway/Dockerfile
     container_name: homecare-gateway
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -140,7 +140,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
       start_period: 90s
@@ -154,8 +154,8 @@ services:
   # ----------------------------------------
   user-service:
     build:
-      context: ../../services/user-service
-      dockerfile: Dockerfile
+      context: ../../services
+      dockerfile: user-service/Dockerfile
     container_name: homecare-user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -195,8 +195,8 @@ services:
   # ----------------------------------------
   property-service:
     build:
-      context: ../../services/property-service
-      dockerfile: Dockerfile
+      context: ../../services
+      dockerfile: property-service/Dockerfile
     container_name: homecare-property-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -235,8 +235,8 @@ services:
   # ----------------------------------------
   service-order-service:
     build:
-      context: ../../services/service-order-service
-      dockerfile: Dockerfile
+      context: ../../services
+      dockerfile: service-order-service/Dockerfile
     container_name: homecare-service-order-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -270,8 +270,8 @@ services:
   # ----------------------------------------
   asset-service:
     build:
-      context: ../../services/asset-service
-      dockerfile: Dockerfile
+      context: ../../services
+      dockerfile: asset-service/Dockerfile
     container_name: homecare-asset-service
     environment:
       SPRING_PROFILES_ACTIVE: docker

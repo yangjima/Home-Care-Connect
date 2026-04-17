@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find 'd:\\\\code\\\\Home-Care-Connect\\\\prototypes\\\\group1-user-pages' -name \"*.html\" -exec wc -l {} \\\\;)",
       "WebFetch(domain:python.langchain.com)",
-      "WebFetch(domain:langchain-ai.github.io)"
+      "WebFetch(domain:langchain-ai.github.io)",
+      "Bash(docker compose *)"
     ]
   }
 }

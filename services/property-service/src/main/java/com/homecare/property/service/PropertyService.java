@@ -6,6 +6,7 @@ import com.homecare.property.dto.PropertyResponse;
 import com.homecare.property.dto.ViewingRequest;
 import com.homecare.property.dto.ViewingResponse;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**

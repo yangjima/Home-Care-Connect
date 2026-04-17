@@ -6,12 +6,14 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-# 复制 pom.xml 并下载依赖（利用 Docker 缓存层）
-COPY pom.xml .
+# 复制父 POM 并安装到本地 Maven 仓库
+COPY pom.xml ./parent-pom.xml
+RUN mvn install -B -f parent-pom.xml -N
+
+COPY user-service/pom.xml ./pom.xml
 RUN mvn dependency:go-offline -B
 
-# 复制源代码并构建
-COPY src ./src
+COPY user-service/src ./src
 RUN mvn clean package -DskipTests -B
 
 # ========== 运行时镜像 ==========

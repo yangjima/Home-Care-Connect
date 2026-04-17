@@ -198,8 +198,7 @@ public class AuthServiceImpl implements AuthService {
     private UserResponse toUserResponse(User user) {
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(user, response);
-        // 不返回密码
-        response.setPassword(null);
+        // UserResponse 不包含 password 字段，无需额外处理
         return response;
     }
 }

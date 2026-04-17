@@ -1,6 +1,7 @@
 package com.homecare.property.service.impl;
 
 import com.homecare.property.service.MinioService;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
@@ -54,7 +55,14 @@ public class MinioServiceImpl implements MinioService {
     @Override
     public String getFileUrl(String bucket, String objectName) {
         try {
-            return minioClient.getObjectUrl(bucket, objectName);
+            return minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucket)
+                            .object(objectName)
+                            .expiry(60 * 60 * 24)
+                            .build()
+            );
         } catch (Exception e) {
             log.error("获取文件URL失败: bucket={}, object={}", bucket, objectName);
             throw new RuntimeException("获取文件URL失败", e);
@@ -81,7 +89,12 @@ public class MinioServiceImpl implements MinioService {
     public String generatePresignedUploadUrl(String bucket, String objectName, int expiresSeconds) {
         try {
             return minioClient.getPresignedObjectUrl(
-                    Method.PUT, bucket, objectName, expiresSeconds, null
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.PUT)
+                            .bucket(bucket)
+                            .object(objectName)
+                            .expiry(expiresSeconds)
+                            .build()
             );
         } catch (Exception e) {
             throw new RuntimeException("生成上传URL失败", e);
@@ -92,7 +105,12 @@ public class MinioServiceImpl implements MinioService {
     public String generatePresignedDownloadUrl(String bucket, String objectName, int expiresSeconds) {
         try {
             return minioClient.getPresignedObjectUrl(
-                    Method.GET, bucket, objectName, expiresSeconds, null
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucket)
+                            .object(objectName)
+                            .expiry(expiresSeconds)
+                            .build()
             );
         } catch (Exception e) {
             throw new RuntimeException("生成下载URL失败", e);

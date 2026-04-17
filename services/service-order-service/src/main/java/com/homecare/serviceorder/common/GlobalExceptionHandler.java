@@ -1,9 +1,8 @@
 package com.homecare.serviceorder.common;
 
-import com.homecare.serviceorder.common.BusinessException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 全局异常处理器
