@@ -11,6 +11,8 @@ services/ai-service/__pycache__/
 services/ai-service/.venv/
 services/ai-service/*.pyc
 services/ai-service/.env
+services/ai-service/**/__pycache__/
+services/ai-service/**/*.pyc
 
 # 前端
 frontend/node_modules/
@@ -18,6 +20,21 @@ frontend/dist/
 frontend/.DS_Store
 frontend/.env.local
 frontend/.env.production
+frontend/src/api/*.js
+frontend/src/api/*.d.ts
+frontend/src/stores/*.js
+frontend/src/stores/*.d.ts
+frontend/src/router/*.js
+frontend/src/router/*.d.ts
+frontend/src/i18n/**/*.js
+frontend/src/i18n/**/*.d.ts
+frontend/src/utils/*.js
+frontend/src/utils/*.d.ts
+frontend/src/types/*.js
+frontend/src/types/*.d.ts
+frontend/src/main.d.ts
+frontend/vite.config.js
+frontend/vite.config.d.ts
 
 # IDE
 .idea/

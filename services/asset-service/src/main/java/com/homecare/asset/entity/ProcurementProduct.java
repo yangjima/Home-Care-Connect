@@ -25,11 +25,16 @@ public class ProcurementProduct {
 
     private Integer stock;
 
-    @TableField(exist = false)
+    /** 计价单位：套、件、桶等 */
     private String unit;
 
-    @TableField(exist = false)
-    private String image;
+    /** 累计销量（展示用） */
+    @TableField("sales_count")
+    private Integer salesCount;
+
+    /** 角标：热卖、新品、特惠等 */
+    @TableField("product_tag")
+    private String productTag;
 
     private String images;
 

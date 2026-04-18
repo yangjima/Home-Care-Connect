@@ -21,7 +21,7 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl ffmpeg
 
 COPY --from=builder /app/target/*.jar app.jar
 

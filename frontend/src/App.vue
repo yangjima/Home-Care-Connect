@@ -17,6 +17,7 @@ const authStore = useAuthStore()
 onMounted(() => {
   // 尝试从 localStorage 恢复登录状态
   authStore.restoreToken()
+  authStore.startSessionLifecycle()
 })
 </script>
 

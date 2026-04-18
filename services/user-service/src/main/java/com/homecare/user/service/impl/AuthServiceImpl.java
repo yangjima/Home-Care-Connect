@@ -8,8 +8,10 @@ import com.homecare.user.common.PasswordEncoder;
 import com.homecare.user.dto.*;
 import com.homecare.user.entity.User;
 import com.homecare.user.repository.UserRepository;
+import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.AuthService;
 import com.homecare.user.service.UserService;
+import com.homecare.user.util.Roles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -37,8 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final com.homecare.user.common.JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
+    private final RsaPasswordDecryptor rsaPasswordDecryptor;
 
-    @Value("${jwt.access-token-expiration:7200000}")
+    @Value("${jwt.access-token-expiration:86400000}")
     private long accessTokenExpiration;
 
     @Value("${jwt.refresh-token-expiration:604800000}")
@@ -77,7 +80,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 验证密码
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        String rawPassword = rsaPasswordDecryptor.decryptRequired(request.getPassword());
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new BusinessException(401, "用户名或密码错误");
         }
 
@@ -108,8 +112,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserResponse register(RegisterRequest request) {
+        String rawPassword = rsaPasswordDecryptor.decryptRequired(request.getPassword());
+        String rawConfirmPassword = rsaPasswordDecryptor.decryptRequired(request.getConfirmPassword());
         // 密码确认
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
+        if (rawPassword == null || !rawPassword.equals(rawConfirmPassword)) {
             throw new BusinessException(400, "两次密码输入不一致");
         }
 
@@ -140,11 +146,16 @@ public class AuthServiceImpl implements AuthService {
         // 构建用户实体
         User user = new User();
         BeanUtils.copyProperties(request, user);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
 
-        // 默认角色
-        if (!StringUtils.hasText(user.getRole())) {
-            user.setRole("tenant");
+        // 默认角色：注册仅允许普通用户，禁止自选管理类角色
+        if (StringUtils.hasText(user.getRole())) {
+            String rr = user.getRole().trim();
+            if (!Roles.TENANT.equals(rr) && !Roles.USER.equals(rr)) {
+                throw new BusinessException(400, "注册仅允许普通用户角色");
+            }
+        } else {
+            user.setRole(Roles.TENANT);
         }
         user.setStatus("active");
 
@@ -201,7 +212,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserResponse registerByEmail(EmailRegisterRequest request) {
-        if (!StringUtils.hasText(request.getPassword()) || !request.getPassword().equals(request.getConfirmPassword())) {
+        String rawPassword = rsaPasswordDecryptor.decryptRequired(request.getPassword());
+        String rawConfirmPassword = rsaPasswordDecryptor.decryptRequired(request.getConfirmPassword());
+        if (!StringUtils.hasText(rawPassword) || !rawPassword.equals(rawConfirmPassword)) {
             throw new BusinessException(400, "两次密码输入不一致");
         }
 
@@ -224,7 +237,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
 
         if (StringUtils.hasText(request.getRealName())) {
             user.setRealName(request.getRealName().trim());

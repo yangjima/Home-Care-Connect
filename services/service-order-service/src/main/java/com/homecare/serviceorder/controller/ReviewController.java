@@ -36,7 +36,7 @@ public class ReviewController {
      * 获取评价详情
      */
     @GetMapping("/{id}")
-    public Result<ReviewResponse> getReviewById(@PathVariable Long id) {
+    public Result<ReviewResponse> getReviewById(@PathVariable("id") Long id) {
         ReviewResponse response = reviewService.getReviewById(id);
         return Result.success(response);
     }
@@ -58,7 +58,7 @@ public class ReviewController {
      * 获取订单评价
      */
     @GetMapping("/order/{orderId}")
-    public Result<ReviewResponse> getReviewByOrderId(@PathVariable Long orderId) {
+    public Result<ReviewResponse> getReviewByOrderId(@PathVariable("orderId") Long orderId) {
         ReviewResponse response = reviewService.getReviewByOrderId(orderId);
         return Result.success(response);
     }

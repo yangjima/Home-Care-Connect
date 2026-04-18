@@ -17,8 +17,11 @@ public class ProcurementProductResponse {
     private BigDecimal price;
     private Integer stock;
     private String unit;
+    /** 封面图（由 images JSON 解析或首图） */
     private String image;
     private String images;
+    private Integer salesCount;
+    private String productTag;
     private Long storeId;
     private String status;
     private LocalDateTime createTime;

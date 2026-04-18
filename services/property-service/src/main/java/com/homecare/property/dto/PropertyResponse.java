@@ -36,6 +36,7 @@ public class PropertyResponse {
     private Boolean isRecommended;
     private LocalDateTime publishedAt;
     private List<String> images;
+    private List<String> videos;
     private String coverImage;
     private LocalDateTime createTime;
 }

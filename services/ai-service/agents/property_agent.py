@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnableConfig
 
 from graph.state import ChatState
 from llm import get_llm
+from message_text import coerce_llm_content
 from tools.property_tools import search_properties, get_property_detail, book_viewing
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ async def property_agent(state: ChatState) -> ChatState:
         return {
             **state,
             "context": context,
-            "response": response.content,
+            "response": coerce_llm_content(getattr(response, "content", response)),
             "last_agent": "property",
         }
 

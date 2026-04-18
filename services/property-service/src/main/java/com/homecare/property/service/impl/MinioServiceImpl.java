@@ -54,19 +54,13 @@ public class MinioServiceImpl implements MinioService {
 
     @Override
     public String getFileUrl(String bucket, String objectName) {
-        try {
-            return minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(bucket)
-                            .object(objectName)
-                            .expiry(60 * 60 * 24)
-                            .build()
-            );
-        } catch (Exception e) {
-            log.error("获取文件URL失败: bucket={}, object={}", bucket, objectName);
-            throw new RuntimeException("获取文件URL失败", e);
+        // 返回可被前端/Nginx 直接访问的路径（由 frontend/nginx.conf 代理到 MinIO）
+        // 形如：/minio/<bucket>/<object>
+        String normalizedObject = objectName == null ? "" : objectName;
+        if (normalizedObject.startsWith("/")) {
+            normalizedObject = normalizedObject.substring(1);
         }
+        return "/minio/" + bucket + "/" + normalizedObject;
     }
 
     @Override

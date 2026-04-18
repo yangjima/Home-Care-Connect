@@ -5,7 +5,9 @@ import com.homecare.asset.common.PageResult;
 import com.homecare.asset.dto.SecondhandItemRequest;
 import com.homecare.asset.dto.SecondhandItemResponse;
 import com.homecare.asset.entity.SecondhandItem;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.homecare.asset.repository.SecondhandItemRepository;
+import com.homecare.asset.repository.UserLookupRepository;
 import com.homecare.asset.service.impl.SecondhandItemServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,11 +34,17 @@ class SecondhandItemServiceTest {
     @Mock
     private SecondhandItemRepository itemRepository;
 
+    @Mock
+    private UserLookupRepository userLookupRepository;
+
     private SecondhandItemServiceImpl itemService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        itemService = new SecondhandItemServiceImpl(itemRepository);
+        itemService = new SecondhandItemServiceImpl(itemRepository, userLookupRepository, objectMapper);
+        lenient().when(userLookupRepository.findSellerLabelById(any())).thenReturn("李女士");
     }
 
     @Nested
@@ -49,12 +57,12 @@ class SecondhandItemServiceTest {
             SecondhandItem item = createTestItem(1L, "二手洗衣机");
             when(itemRepository.selectById(1L)).thenReturn(item);
 
-            SecondhandItemResponse response = itemService.getById(1L);
+            SecondhandItemResponse response = itemService.getById(1L, null, null);
 
             assertNotNull(response);
             assertEquals(1L, response.getId());
             assertEquals("二手洗衣机", response.getTitle());
-            assertEquals("9成新", response.getCondition());
+            assertEquals("like_new", response.getCondition());
         }
 
         @Test
@@ -63,7 +71,7 @@ class SecondhandItemServiceTest {
             when(itemRepository.selectById(999L)).thenReturn(null);
 
             BusinessException exception = assertThrows(BusinessException.class,
-                    () -> itemService.getById(999L));
+                    () -> itemService.getById(999L, null, null));
 
             assertEquals(404, exception.getCode());
         }
@@ -155,8 +163,8 @@ class SecondhandItemServiceTest {
         item.setDescription("测试描述");
         item.setCategory("家用电器");
         item.setPrice(new BigDecimal("500.00"));
-        item.setCondition("9成新");
-        item.setStatus("pending");
+        item.setCondition("like_new");
+        item.setStatus("1");
         item.setViewCount(0L);
         item.setExpireTime(LocalDateTime.now().plusDays(30));
         item.setDeleted(0);

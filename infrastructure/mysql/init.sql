@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS property (
     address         VARCHAR(500) NOT NULL COMMENT '详细地址',
     description     TEXT COMMENT '详细描述',
     facilities      JSON COMMENT '配套设施：["空调","热水器","洗衣机"]',
-    status          ENUM('vacant', 'occupied', 'reserved') DEFAULT 'vacant' COMMENT '状态：空置/已租/预留',
+    status          ENUM('pending', 'rejected', 'vacant', 'occupied', 'reserved') DEFAULT 'pending' COMMENT 'pending=待上架审核 rejected=已驳回 vacant=已上架空置 occupied=已租 reserved=下架/预定',
     manager_id      BIGINT NOT NULL COMMENT '负责店长ID',
     view_count      INT DEFAULT 0 COMMENT '浏览次数',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS service_type (
     base_price  DECIMAL(10,2) NOT NULL COMMENT '基础价格',
     unit        VARCHAR(20) DEFAULT '次' COMMENT '计费单位',
     icon        VARCHAR(100) COMMENT '图标URL',
-    status      TINYINT DEFAULT 1 COMMENT '状态：1=启用 0=禁用',
+    status      TINYINT DEFAULT 1 COMMENT '状态：2=待上架审核 1=已上架 0=禁用',
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_category (category)
@@ -240,7 +240,10 @@ CREATE TABLE IF NOT EXISTS procurement_product (
     description TEXT COMMENT '商品描述',
     images      JSON COMMENT '商品图片列表（MinIO URL）',
     stock       INT DEFAULT 0 COMMENT '库存数量',
-    status      TINYINT DEFAULT 1 COMMENT '状态：1=上架 0=下架',
+    unit        VARCHAR(20) DEFAULT '件' COMMENT '计价单位',
+    sales_count INT DEFAULT 0 COMMENT '累计销量',
+    product_tag VARCHAR(20) NULL COMMENT '角标：热卖/新品/特惠',
+    status      TINYINT DEFAULT 2 COMMENT '状态：2=待上架审核 1=已上架 0=下架',
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_category (category),
@@ -258,11 +261,13 @@ CREATE TABLE IF NOT EXISTS secondhand_item (
     title       VARCHAR(200) NOT NULL COMMENT '物品标题',
     category    VARCHAR(50) NOT NULL COMMENT '分类',
     price       DECIMAL(10,2) NOT NULL COMMENT '价格',
+    original_price DECIMAL(10,2) NULL COMMENT '原价（展示划线价）',
     condition   ENUM('like_new', 'good', 'fair') NOT NULL COMMENT '新旧程度：几乎全新/良好/一般',
     description TEXT COMMENT '物品描述',
     images      JSON COMMENT '图片列表（MinIO URL）',
     contact     VARCHAR(100) COMMENT '联系方式',
-    status      TINYINT DEFAULT 1 COMMENT '状态：1=上架 0=下架',
+    location    VARCHAR(200) NULL COMMENT '自提/交易地点',
+    status      TINYINT DEFAULT 2 COMMENT '状态：2=待上架审核 1=已上架 0=下架',
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_publisher (publisher_id),
@@ -290,6 +295,9 @@ INSERT INTO sys_user (username, password, phone, role, status) VALUES
 ('user1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.R8w.B1kcXBN7v3CqUy', '13800000006', 'user', 1),
 ('distributor1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.R8w.B1kcXBN7v3CqUy', '13800000007', 'distributor', 1),
 ('supplier1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.R8w.B1kcXBN7v3CqUy', '13800000008', 'supplier', 1);
+
+UPDATE sys_user SET real_name = '李女士' WHERE username = 'user1';
+UPDATE sys_user SET real_name = '张先生' WHERE username = 'distributor1';
 
 -- 更新门店的店长ID
 UPDATE store SET manager_id = 2 WHERE id = 1;
@@ -330,19 +338,27 @@ INSERT INTO property_image (property_id, url, type, sort_order) VALUES
 INSERT INTO distributor (user_id, bind_code, commission_rate, total_deals, total_commission) VALUES
 (7, 'DIST20260001', 0.0100, 3, 750.00);
 
--- 插入采购商品测试数据
-INSERT INTO procurement_product (supplier_id, name, category, price, description, stock, status) VALUES
-(8, '实木双人床 1.8米', '家具', 2800.00, '优质实木框架，环保油漆，承重力强，适合家庭使用', 10, 1),
-(8, '品牌沙发 三人位', '家具', 4500.00, '现代简约风格，高回弹海绵坐垫，可拆洗布艺外套', 5, 1),
-(8, '节能空调 1.5匹', '家电', 2200.00, '变频节能空调，冷暖两用，智能控温，适合15-22平米房间', 15, 1),
-(8, '滚筒洗衣机 8公斤', '家电', 1800.00, '智能滚筒洗衣机，8公斤大容量，多种洗涤程序', 8, 1),
-(8, 'LED吸顶灯', '日用品', 180.00, '现代简约LED吸顶灯，直径50cm，三色可调', 50, 1);
+-- 插入采购商品测试数据（与本地商城原型分类、销量展示对齐）
+INSERT INTO procurement_product (supplier_id, name, category, price, description, stock, status, unit, sales_count, product_tag) VALUES
+(8, '得力办公文具套装（含笔筒、回形针、便签）', '办公用品', 68.00, '社区团购优选，含笔筒、回形针、便签', 200, 1, '/套', 286, '热卖'),
+(8, '家用清洁工具套装（拖把、抹布、洗洁精）', '清洁用品', 45.00, '拖把、抹布、洗洁精组合', 120, 1, '/套', 158, NULL),
+(8, '家用维修工具箱（螺丝刀、锤子、扳手套装）', '维修工具', 128.00, '螺丝刀、锤子、扳手套装', 80, 1, '/套', 92, '新品'),
+(8, '办公室绿植盆栽组合（绿萝、吊兰、文竹）', '绿植盆栽', 88.00, '绿萝、吊兰、文竹组合', 40, 1, '/组', 64, NULL),
+(8, '社区安防摄像头套装（4台装，含录像存储）', '安防设备', 680.00, '4台装，含录像存储方案', 25, 1, '/套', 38, '特惠'),
+(8, '84消毒液 / 75%酒精消毒液套装（大桶装）', '清洁用品', 35.00, '大桶装，满足日常消杀', 300, 1, '/桶', 312, NULL),
+(8, '折叠会议桌椅套装（2桌8椅，适合社区活动）', '生活物资', 880.00, '2桌8椅，适合社区活动', 15, 1, '/套', 25, NULL),
+(8, '应急物资储备包（包含手电筒、电池、蜡烛等）', '生活物资', 55.00, '手电筒、电池、蜡烛等', 100, 1, '/包', 120, NULL);
 
--- 插入二手物品测试数据
-INSERT INTO secondhand_item (publisher_id, title, category, price, condition, description, contact, status) VALUES
-(6, '二手实木衣柜 自提', '家具', 600.00, 'good', '用了2年的实木衣柜，结构完好，无损坏，尺寸1.8x0.6x2m，因搬家转让', '13800000006', 1),
-(6, '九成新小米电视 43寸', '家电', 1200.00, 'like_new', '买了半年，使用频率很低，屏幕完好，功能正常，带遥控器和底座', '13800000006', 1),
-(7, '二手书桌+椅子一套', '家具', 200.00, 'fair', '简约书桌+配套椅子，适合学生或办公使用，有轻微划痕，不影响使用', '13800000007', 1);
+-- 插入二手物品测试数据（分类与原型 Tab 对齐）
+INSERT INTO secondhand_item (publisher_id, title, category, price, original_price, condition, description, contact, location, status) VALUES
+(6, '实木双人床（1.8米宽，配床垫）搬家急售', '家具家居', 680.00, 1800.00, 'good', '搬家急售，床体稳固', '13800000006', '朝阳区·望京', 1),
+(6, '小米55寸4K智能电视，使用一年，屏幕完美', '数码电器', 1200.00, 2500.00, 'like_new', '使用一年，屏幕完美', '13800000006', '海淀区·五道口', 1),
+(7, '品牌女装连衣裙，M码，仅试穿吊牌还在', '服饰箱包', 128.00, 380.00, 'like_new', '仅试穿吊牌还在', '13800000007', '东城区·东直门', 1),
+(6, '儿童绘本全套30本，适合3-6岁，低价出', '书籍文具', 68.00, 180.00, 'fair', '全套30本', '13800000006', '丰台区·宋家庄', 1),
+(7, '北欧风布艺沙发，三人位，颜色百搭', '家具家居', 980.00, 2200.00, 'good', '三人位布艺沙发', '13800000007', '朝阳区·三元桥', 1),
+(6, '捷安特山地自行车，适合通勤，偶尔使用', '运动户外', 450.00, 800.00, 'like_new', '偶尔使用车况好', '13800000006', '海淀区·中关村', 1),
+(7, '大型绿植琴叶榕，高1.2米，花盆一并送', '绿植宠物', 88.00, 200.00, 'good', '高1.2米含花盆', '13800000007', '西城区·金融街', 1),
+(6, 'Switch游戏机+健身环大冒险，全套配件齐全', '数码电器', 1680.00, 3000.00, 'like_new', '全套配件齐全', '13800000006', '朝阳区·国贸', 1);
 
 -- 确认数据插入成功
 SELECT '数据初始化完成' AS status;

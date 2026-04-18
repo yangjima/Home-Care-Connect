@@ -22,8 +22,8 @@ public class JwtUtil {
     @Value("${jwt.secret:HomeCareSecretKey2026ForJWTTokenGeneration}")
     private String secret;
 
-    @Value("${jwt.access-token-expiration:7200000}")
-    private long accessTokenExpiration; // 默认2小时
+    @Value("${jwt.access-token-expiration:86400000}")
+    private long accessTokenExpiration; // 默认1天
 
     @Value("${jwt.refresh-token-expiration:604800000}")
     private long refreshTokenExpiration; // 默认7天

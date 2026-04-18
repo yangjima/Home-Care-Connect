@@ -40,6 +40,11 @@ public interface UserService {
     void updateUserStatus(Long id, String status);
 
     /**
+     * 更新用户角色（后台）
+     */
+    UserResponse updateUserRole(Long id, String role);
+
+    /**
      * 检查用户名是否存在
      */
     boolean isUsernameExists(String username);

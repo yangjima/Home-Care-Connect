@@ -72,12 +72,12 @@
         <div class="chat-input-area">
           <div class="input-wrapper">
             <el-input
+              ref="inputRef"
               v-model="inputText"
               type="textarea"
               :rows="2"
               placeholder="输入您的问题..."
               resize="none"
-              @keydown.enter.exact.prevent="handleSend"
             />
             <el-button
               type="primary"
@@ -100,6 +100,7 @@
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import type { InputInstance } from 'element-plus'
 import { Plus, Promotion } from '@element-plus/icons-vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { useAIStore } from '@/stores/ai'
@@ -108,6 +109,19 @@ const aiStore = useAIStore()
 
 const inputText = ref('')
 const messagesRef = ref<HTMLElement>()
+const inputRef = ref<InputInstance>()
+
+function bindTextareaEnter() {
+  const ta = inputRef.value?.textarea
+  if (!ta) return
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.shiftKey) return
+    e.preventDefault()
+    void handleSend()
+  }
+  ta.addEventListener('keydown', onKeydown)
+  return () => ta.removeEventListener('keydown', onKeydown)
+}
 
 function scrollToBottom() {
   nextTick(() => {
@@ -148,15 +162,20 @@ function formatTime(time?: string): string {
   return d.toLocaleDateString()
 }
 
-onMounted(() => {
+let unbindTextarea: (() => void) | undefined
+
+onMounted(async () => {
   // 默认创建一个会话
   if (aiStore.sessions.length === 0) {
     startNewSession()
   }
   scrollToBottom()
+  await nextTick()
+  unbindTextarea = bindTextareaEnter()
 })
 
 onUnmounted(() => {
+  unbindTextarea?.()
   aiStore.disconnectWebSocket()
 })
 </script>

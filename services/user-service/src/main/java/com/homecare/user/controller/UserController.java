@@ -1,10 +1,14 @@
 package com.homecare.user.controller;
 
+import com.homecare.user.common.BusinessException;
 import com.homecare.user.common.PageResult;
 import com.homecare.user.common.Result;
 import com.homecare.user.dto.UserResponse;
 import com.homecare.user.entity.User;
+import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.UserService;
+import com.homecare.user.util.GatewayHeaders;
+import com.homecare.user.util.Roles;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,7 @@ public class UserController {
 
     private final UserService userService;
     private final MinioClient minioClient;
+    private final RsaPasswordDecryptor rsaPasswordDecryptor;
 
     @Value("${minio.bucket.avatar:homecare-avatar}")
     private String avatarBucket;
@@ -38,7 +43,12 @@ public class UserController {
      * 获取用户详情
      */
     @GetMapping("/{id}")
-    public Result<UserResponse> getUserById(@PathVariable Long id) {
+    public Result<UserResponse> getUserById(@PathVariable("id") Long id, HttpServletRequest request) {
+        Long operatorId = requireUserId(request);
+        String role = GatewayHeaders.role(request);
+        if (!id.equals(operatorId) && !Roles.isPlatformAdmin(role)) {
+            return Result.error(403, "无权查看该用户");
+        }
         UserResponse response = userService.getUserById(id);
         return Result.success(response);
     }
@@ -47,7 +57,12 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping("/{id}")
-    public Result<UserResponse> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public Result<UserResponse> updateUser(@PathVariable("id") Long id, @RequestBody User user, HttpServletRequest request) {
+        Long operatorId = requireUserId(request);
+        String role = GatewayHeaders.role(request);
+        if (!id.equals(operatorId) && !Roles.isPlatformAdmin(role)) {
+            return Result.error(403, "无权修改该用户");
+        }
         UserResponse response = userService.updateUser(id, user);
         return Result.success("更新成功", response);
     }
@@ -57,9 +72,16 @@ public class UserController {
      */
     @PutMapping("/{id}/password")
     public Result<Void> updatePassword(
-            @PathVariable Long id,
-            @RequestBody PasswordUpdateRequest request) {
-        userService.updatePassword(id, request.getOldPassword(), request.getNewPassword());
+            @PathVariable("id") Long id,
+            @RequestBody PasswordUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        Long operatorId = requireUserId(httpRequest);
+        if (!id.equals(operatorId)) {
+            return Result.error(403, "只能修改自己的密码");
+        }
+        String oldPassword = rsaPasswordDecryptor.decryptRequired(request.getOldPassword());
+        String newPassword = rsaPasswordDecryptor.decryptRequired(request.getNewPassword());
+        userService.updatePassword(id, oldPassword, newPassword);
         return Result.success("密码更新成功", null);
     }
 
@@ -71,7 +93,9 @@ public class UserController {
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
             @RequestParam(value = "role", required = false) String role,
-            @RequestParam(value = "keyword", required = false) String keyword) {
+            @RequestParam(value = "keyword", required = false) String keyword,
+            HttpServletRequest request) {
+        requirePlatformAdmin(request);
         PageResult<UserResponse> result = userService.listUsers(page, pageSize, role, keyword);
         return Result.success(result);
     }
@@ -81,10 +105,25 @@ public class UserController {
      */
     @PatchMapping("/{id}/status")
     public Result<Void> updateUserStatus(
-            @PathVariable Long id,
-            @RequestBody StatusUpdateRequest request) {
+            @PathVariable("id") Long id,
+            @RequestBody StatusUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        requirePlatformAdmin(httpRequest);
         userService.updateUserStatus(id, request.getStatus());
         return Result.success("状态更新成功", null);
+    }
+
+    /**
+     * 更新用户角色（超级管理员 / 店长）
+     */
+    @PatchMapping("/{id}/role")
+    public Result<UserResponse> updateUserRole(
+            @PathVariable("id") Long id,
+            @RequestBody RoleUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        requirePlatformAdmin(httpRequest);
+        UserResponse updated = userService.updateUserRole(id, request.getRole());
+        return Result.success("角色更新成功", updated);
     }
 
     /**
@@ -128,7 +167,7 @@ public class UserController {
             return Result.error(400, "只支持图片文件");
         }
 
-        Long userId = getUserId(request);
+        Long userId = requireUserId(request);
         String ext = getFileExtension(file.getOriginalFilename());
         String objectName = "user/" + userId + "/" + UUID.randomUUID().toString().replace("-", "") + ext;
 
@@ -170,12 +209,24 @@ public class UserController {
         private String status;
     }
 
-    private Long getUserId(HttpServletRequest request) {
-        Object userId = request.getAttribute("userId");
+    @lombok.Data
+    public static class RoleUpdateRequest {
+        private String role;
+    }
+
+    private Long requireUserId(HttpServletRequest request) {
+        Long userId = GatewayHeaders.userId(request);
         if (userId == null) {
-            return 1L;
+            throw new BusinessException(401, "未登录");
         }
-        return (Long) userId;
+        return userId;
+    }
+
+    private void requirePlatformAdmin(HttpServletRequest request) {
+        String role = GatewayHeaders.role(request);
+        if (!Roles.isPlatformAdmin(role)) {
+            throw new BusinessException(403, "仅超级管理员或店长可访问");
+        }
     }
 
     private String getFileExtension(String filename) {

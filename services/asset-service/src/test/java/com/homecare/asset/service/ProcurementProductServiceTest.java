@@ -49,12 +49,12 @@ class ProcurementProductServiceTest {
             ProcurementProduct product = createTestProduct(1L, "清洁工具套装");
             when(productRepository.selectById(1L)).thenReturn(product);
 
-            ProcurementProductResponse response = productService.getById(1L);
+            ProcurementProductResponse response = productService.getById(1L, null, null);
 
             assertNotNull(response);
             assertEquals(1L, response.getId());
             assertEquals("清洁工具套装", response.getName());
-            assertEquals("active", response.getStatus());
+            assertEquals("1", response.getStatus());
         }
 
         @Test
@@ -63,7 +63,7 @@ class ProcurementProductServiceTest {
             when(productRepository.selectById(999L)).thenReturn(null);
 
             BusinessException exception = assertThrows(BusinessException.class,
-                    () -> productService.getById(999L));
+                    () -> productService.getById(999L, null, null));
 
             assertEquals(404, exception.getCode());
             assertEquals("商品不存在", exception.getMessage());
@@ -172,7 +172,7 @@ class ProcurementProductServiceTest {
         product.setStock(100);
         product.setUnit("套");
         product.setStoreId(1L);
-        product.setStatus("active");
+        product.setStatus("1");
         product.setDeleted(0);
         product.setCreateTime(LocalDateTime.now());
         return product;

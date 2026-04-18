@@ -1,8 +1,6 @@
 <template>
   <div class="orders-page">
-    <div class="page-header">
-      <h1>我的订单</h1>
-    </div>
+    <UserSubpageHeader title="我的订单" />
 
     <div class="filter-bar">
       <el-radio-group v-model="filterStatus" @change="handleStatusChange">
@@ -18,7 +16,9 @@
       <div v-for="order in orders" :key="order.id" class="order-card card">
         <div class="order-header">
           <span class="order-no">订单号：{{ order.orderNo }}</span>
-          <span class="order-status" :class="statusClass(order.status)">{{ statusLabel(order.status) }}</span>
+          <el-tag :type="statusType(order.status)" size="small">
+            {{ statusLabel(order.status) }}
+          </el-tag>
         </div>
 
         <div class="order-body">
@@ -31,7 +31,9 @@
           </div>
           <div class="order-price">
             <span class="amount">¥{{ order.totalAmount }}</span>
-            <span class="pay-status" :class="payStatusClass(order.payStatus)">{{ payStatusLabel(order.payStatus) }}</span>
+            <el-tag :type="payStatusType(order.payStatus)" size="small">
+              {{ payStatusLabel(order.payStatus) }}
+            </el-tag>
           </div>
         </div>
 
@@ -64,6 +66,7 @@
 import { ref, onMounted } from 'vue'
 import { Clock, Location } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import UserSubpageHeader from '@/components/user/UserSubpageHeader.vue'
 import { useServiceStore } from '@/stores/service'
 import type { ServiceOrder } from '@/types'
 import { createReview, getOrderDetail } from '@/api/service'
@@ -119,6 +122,18 @@ function statusClass(status: number | string): string {
   return map[toStatusKey(status)] || ''
 }
 
+function statusType(status: number | string) {
+  const map: Record<string, 'warning' | 'success' | 'info' | 'primary'> = {
+    pending: 'warning',
+    assigned: 'primary',
+    accepted: 'primary',
+    in_progress: 'primary',
+    completed: 'success',
+    cancelled: 'info',
+  }
+  return map[toStatusKey(status)] || 'info'
+}
+
 function toPayStatusKey(status: number | string | null): string {
   if (status === null || status === undefined || status === '') return 'pending'
   if (typeof status === 'number') {
@@ -135,6 +150,10 @@ function payStatusLabel(status: number | string | null): string {
 
 function payStatusClass(status: number | string | null): string {
   return toPayStatusKey(status) === 'paid' ? 'paid' : 'unpaid'
+}
+
+function payStatusType(status: number | string | null) {
+  return toPayStatusKey(status) === 'paid' ? 'success' : 'warning'
 }
 
 function formatDate(date?: string): string {
@@ -251,11 +270,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .orders-page {
-  .page-header h1 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: var(--spacing-lg);
-  }
+  // header is unified by UserSubpageHeader
 }
 
 .filter-bar {
@@ -291,14 +306,7 @@ onMounted(() => {
 }
 
 .order-status {
-  font-size: 13px;
-  font-weight: 500;
-
-  &.pending { color: #e6a23c; }
-  &.confirmed { color: #409eff; }
-  &.processing { color: #409eff; }
-  &.completed { color: #67c23a; }
-  &.cancelled { color: #909399; }
+  // legacy (replaced by el-tag)
 }
 
 .order-body {
@@ -342,10 +350,7 @@ onMounted(() => {
   }
 
   .pay-status {
-    font-size: 12px;
-
-    &.paid { color: #67c23a; }
-    &.unpaid { color: #e6a23c; }
+    // legacy (replaced by el-tag)
   }
 }
 

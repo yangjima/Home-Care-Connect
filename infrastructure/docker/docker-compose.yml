@@ -87,17 +87,22 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: homecare-minio-init
+    entrypoint: /bin/sh
     depends_on:
       minio:
         condition: service_healthy
     command:
-      - /bin/sh
       - -ec
       - |
         echo "Configuring MinIO bucket policies..."
         mc alias set local http://minio:9001 ${MINIO_ROOT_USER:-homecareadmin} ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+        # 确保桶存在，避免首次/重复启动失败
+        mc mb --ignore-existing local/homecare-avatar
+        mc mb --ignore-existing local/property-images
         # 头像桶开放匿名下载，便于前端直接展示
         mc anonymous set download local/homecare-avatar
+        # 房源媒体桶开放匿名下载，便于前端直接展示
+        mc anonymous set download local/property-images
         echo "MinIO bucket policy configured."
     restart: "no"
     networks:
@@ -235,6 +240,8 @@ services:
       MINIO_ENDPOINT: http://minio:9001
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-homecareadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-HomeCare2026@Minio}
+      # Optional: enable login password ciphertext decryption (RSA-OAEP SHA-256)
+      LOGIN_RSA_PRIVATE_KEY: ${LOGIN_RSA_PRIVATE_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy
@@ -416,15 +423,23 @@ services:
       context: ../../services/ai-service
       dockerfile: Dockerfile
     container_name: homecare-ai-service
+    # 仓库根 .env 不参与 compose 插值（项目目录为 infrastructure/docker），用 env_file 注入密钥；
+    # 切勿在 environment 里写 DASHSCOPE_API_KEY: ${...:-}，空字符串会覆盖 env_file 中的有效值。
+    env_file:
+      - path: ../../.env
+        required: false
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-HomeCare2026@Redis}
-      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
-      DASHSCOPE_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       LLM_MODEL: ${LLM_MODEL:-qwen-plus}
       HOST: 0.0.0.0
       PORT: 8000
+      # 经网关调用各微服务（与网关 StripPrefix 路由一致）
+      PROPERTY_SERVICE_URL: http://gateway:8080/api/property
+      SERVICE_ORDER_URL: http://gateway:8080/api/service
+      ASSET_SERVICE_URL: http://gateway:8080/api/asset
+      USER_SERVICE_URL: http://gateway:8080/api/user
     ports:
       - "8000:8000"
     depends_on:
@@ -450,14 +465,17 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
-        VITE_WS_URL: ws://gateway:8080
         VITE_ENV: production
+        # Optional: enable login password encryption (RSA-OAEP SHA-256)
+        VITE_LOGIN_RSA_PUBLIC_KEY: ${VITE_LOGIN_RSA_PUBLIC_KEY:-}
     container_name: homecare-frontend
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       gateway:
+        condition: service_healthy
+      ai-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]

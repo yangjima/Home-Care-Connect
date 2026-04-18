@@ -24,8 +24,15 @@ public class SecondhandItemRequest {
     @NotNull(message = "价格不能为空")
     private BigDecimal price;
 
+    /** 原价（可选） */
+    private BigDecimal originalPrice;
+
     @NotBlank(message = "新旧程度不能为空")
     private String condition;
+
+    private String contact;
+
+    private String location;
 
     private String image;
 

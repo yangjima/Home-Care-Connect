@@ -35,7 +35,7 @@ mybatis-plus:
 
 jwt:
   secret: TestSecretKeyForJWTTokenTesting1234567890ABCDEF
-  access-token-expiration: 7200000
+  access-token-expiration: 86400000
   refresh-token-expiration: 604800000
   issuer: homecare-test
 

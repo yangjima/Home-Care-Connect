@@ -17,12 +17,15 @@ COPY . .
 
 # 构建（VITE_API_BASE_URL 在 docker-compose 中通过 ARG 传入）
 ARG VITE_API_BASE_URL=/api
-ARG VITE_WS_URL=ws://gateway:8080
+# 留空则浏览器使用当前页面的 ws(s)://host，经 nginx /api 反代到网关（勿填容器名，浏览器无法解析）
+ARG VITE_WS_URL=
 ARG VITE_ENV=production
+ARG VITE_LOGIN_RSA_PUBLIC_KEY=
 
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_WS_URL=$VITE_WS_URL
 ENV VITE_ENV=$VITE_ENV
+ENV VITE_LOGIN_RSA_PUBLIC_KEY=$VITE_LOGIN_RSA_PUBLIC_KEY
 
 RUN npm run build
 

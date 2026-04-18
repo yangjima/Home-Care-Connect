@@ -41,6 +41,9 @@ public class ServiceOrderServiceImpl implements ServiceOrderService {
         if (serviceType == null) {
             throw new BusinessException(404, "服务类型不存在");
         }
+        if (serviceType.getStatus() == null || serviceType.getStatus() != 1) {
+            throw new BusinessException(400, "该服务暂不可预约或未通过上架审核");
+        }
 
         Long storeId = 1L;
         ServiceStaff staff = null;

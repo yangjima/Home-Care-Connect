@@ -15,6 +15,32 @@ const apiClient: AxiosInstance = axios.create({
   },
 })
 
+let isRedirectingToLogin = false
+
+function handleAuthExpired() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user_info')
+
+  ElMessage.error('登录已过期，请重新登录')
+
+  if (isRedirectingToLogin) {
+    return
+  }
+
+  const currentRoute = router.currentRoute.value
+  if (currentRoute.name === 'Login') {
+    return
+  }
+
+  isRedirectingToLogin = true
+  router
+    .replace({ name: 'Login', query: { redirect: currentRoute.fullPath } })
+    .finally(() => {
+      isRedirectingToLogin = false
+    })
+}
+
 // 请求拦截器
 apiClient.interceptors.request.use(
   (config) => {
@@ -22,6 +48,10 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('access_token')
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`
+    }
+    // FormData 必须由浏览器设置 multipart boundary；去掉实例默认的 application/json
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData && config.headers) {
+      delete (config.headers as Record<string, unknown>)['Content-Type']
     }
     return config
   },
@@ -35,6 +65,11 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     const { code, message, data } = response.data
 
+    if (code === 401) {
+      handleAuthExpired()
+      return Promise.reject(new Error(message || '登录已过期，请重新登录'))
+    }
+
     if (code !== 200) {
       ElMessage.error(message || '请求失败')
       return Promise.reject(new Error(message || '请求失败'))
@@ -46,17 +81,7 @@ apiClient.interceptors.response.use(
     const status = error.response?.status
 
     if (status === 401) {
-      // Token 过期，清除登录状态
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('user_info')
-
-      ElMessage.error('登录已过期，请重新登录')
-
-      const currentRoute = router.currentRoute.value
-      if (currentRoute.name !== 'Login') {
-        router.push({ name: 'Login', query: { redirect: currentRoute.fullPath } })
-      }
+      handleAuthExpired()
     } else if (status === 403) {
       ElMessage.error('无权限访问')
     } else if (status === 404) {
@@ -84,6 +109,11 @@ export function post<T = unknown>(url: string, data?: object, config?: AxiosRequ
 // 封装 PUT 请求
 export function put<T = unknown>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
   return apiClient.put(url, data, config)
+}
+
+// 封装 PATCH 请求
+export function patch<T = unknown>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
+  return apiClient.patch(url, data, config)
 }
 
 // 封装 DELETE 请求

@@ -18,8 +18,9 @@ async def search_services(query: str, user_id: Optional[str] = None) -> str:
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.SERVICE_ORDER_URL.rstrip("/")
             response = await client.get(
-                f"{settings.SERVICE_ORDER_URL}/api/service-types",
+                f"{base}/service-types",
                 params={"keyword": query},
                 headers=_build_headers(user_id),
             )
@@ -50,8 +51,9 @@ async def create_service_order(
     """创建服务订单"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.SERVICE_ORDER_URL.rstrip("/")
             response = await client.post(
-                f"{settings.SERVICE_ORDER_URL}/api/orders",
+                f"{base}/orders",
                 json={
                     "userId": user_id,
                     "serviceTypeId": service_type_id,
@@ -78,8 +80,9 @@ async def get_service_types(category: Optional[str] = None) -> str:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             params = {"category": category} if category else {}
+            base = settings.SERVICE_ORDER_URL.rstrip("/")
             response = await client.get(
-                f"{settings.SERVICE_ORDER_URL}/api/service-types",
+                f"{base}/service-types",
                 params=params,
                 headers=_build_headers(None),
             )

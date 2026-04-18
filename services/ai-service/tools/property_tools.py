@@ -12,6 +12,16 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
+def _page_records(payload: dict) -> list:
+    """解析 Spring Result<PageResult<T>> 或 list 为记录列表。"""
+    inner = payload.get("data")
+    if isinstance(inner, list):
+        return inner
+    if isinstance(inner, dict):
+        return inner.get("records") or inner.get("list") or []
+    return []
+
+
 async def search_properties(query: str, user_id: Optional[str] = None) -> str:
     """
     搜索房源
@@ -25,16 +35,16 @@ async def search_properties(query: str, user_id: Optional[str] = None) -> str:
     """
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # 尝试搜索房源
+            base = settings.PROPERTY_SERVICE_URL.rstrip("/")
             response = await client.get(
-                f"{settings.PROPERTY_SERVICE_URL}/api/properties",
-                params={"keyword": query, "page": 1, "size": 5},
+                f"{base}/properties",
+                params={"keyword": query, "page": 1, "pageSize": 5},
                 headers=_build_headers(user_id),
             )
 
             if response.status_code == 200:
                 data = response.json()
-                properties = data.get("data", {}).get("list", [])
+                properties = _page_records(data)
 
                 if not properties:
                     return "暂无符合条件的房源，您可以尝试调整搜索条件。"
@@ -53,8 +63,9 @@ async def get_property_detail(property_id: int, user_id: Optional[str] = None) -
     """获取房源详情"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.PROPERTY_SERVICE_URL.rstrip("/")
             response = await client.get(
-                f"{settings.PROPERTY_SERVICE_URL}/api/properties/{property_id}",
+                f"{base}/properties/{property_id}",
                 headers=_build_headers(user_id),
             )
 
@@ -79,8 +90,9 @@ async def book_viewing(
     """预约看房"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.PROPERTY_SERVICE_URL.rstrip("/")
             response = await client.post(
-                f"{settings.PROPERTY_SERVICE_URL}/api/viewings",
+                f"{base}/viewings",
                 json={
                     "propertyId": property_id,
                     "userId": user_id,

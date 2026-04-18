@@ -29,4 +29,8 @@ public class ProcurementProductRequest {
     private String image;
 
     private String images;
+
+    private Integer salesCount;
+
+    private String productTag;
 }

@@ -6,6 +6,11 @@ spring:
   application:
     name: property-service
 
+  servlet:
+    multipart:
+      max-file-size: 220MB
+      max-request-size: 220MB
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
 

@@ -11,19 +11,29 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
+def _page_records(payload: dict) -> list:
+    inner = payload.get("data")
+    if isinstance(inner, list):
+        return inner
+    if isinstance(inner, dict):
+        return inner.get("records") or inner.get("list") or []
+    return []
+
+
 async def search_procurement_products(query: str, user_id: Optional[str] = None) -> str:
     """搜索办公用品采购"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.ASSET_SERVICE_URL.rstrip("/")
             response = await client.get(
-                f"{settings.ASSET_SERVICE_URL}/api/procurement-products",
-                params={"keyword": query, "page": 1, "size": 5},
+                f"{base}/procurement-products",
+                params={"keyword": query, "page": 1, "pageSize": 5},
                 headers=_build_headers(user_id),
             )
 
             if response.status_code == 200:
                 data = response.json()
-                products = data.get("data", {}).get("list", [])
+                products = _page_records(data)
 
                 if not products:
                     return "暂无符合条件的采购商品。"
@@ -40,15 +50,16 @@ async def search_secondhand_items(query: str, user_id: Optional[str] = None) -> 
     """搜索二手物品"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.ASSET_SERVICE_URL.rstrip("/")
             response = await client.get(
-                f"{settings.ASSET_SERVICE_URL}/api/secondhand-items",
-                params={"keyword": query, "page": 1, "size": 5},
+                f"{base}/secondhand-items",
+                params={"keyword": query, "page": 1, "pageSize": 5},
                 headers=_build_headers(user_id),
             )
 
             if response.status_code == 200:
                 data = response.json()
-                items = data.get("data", {}).get("list", [])
+                items = _page_records(data)
 
                 if not items:
                     return "暂无符合条件的二手物品。"
@@ -70,8 +81,10 @@ async def create_procurement_order(
     """创建采购订单"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            base = settings.ASSET_SERVICE_URL.rstrip("/")
+            # 采购下单若后端未提供独立接口，调用会失败并走下方提示
             response = await client.post(
-                f"{settings.ASSET_SERVICE_URL}/api/orders",
+                f"{base}/procurement-orders",
                 json={
                     "userId": user_id,
                     "productId": product_id,

@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from graph.state import ChatState
 from llm import get_llm
+from message_text import coerce_llm_content
 from tools.service_tools import search_services, create_service_order, get_service_types
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ async def service_agent(state: ChatState) -> ChatState:
         return {
             **state,
             "context": context,
-            "response": response.content,
+            "response": coerce_llm_content(getattr(response, "content", response)),
             "last_agent": "service",
         }
 

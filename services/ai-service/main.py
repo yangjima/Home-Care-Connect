@@ -15,6 +15,8 @@ from agents.router import route_query
 from config import settings
 from langchain_core.messages import HumanMessage
 
+from message_text import coerce_llm_content
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -102,7 +104,10 @@ async def _invoke_chat_graph(message: str, session_id: str, user_id=None) -> dic
     reply = result.get("response", "")
     if not reply:
         last_msg = result["messages"][-1]
-        reply = getattr(last_msg, "content", str(last_msg))
+        raw = getattr(last_msg, "content", None)
+        reply = coerce_llm_content(raw) if raw is not None else str(last_msg)
+    else:
+        reply = coerce_llm_content(reply)
 
     return {
         "intent": intent,
@@ -216,11 +221,13 @@ async def stream_graph_response(graph, user_message: str, session_id: str, user_
         if not response_content:
             last_msg = result["messages"][-1]
             if hasattr(last_msg, "content"):
-                response_content = last_msg.content
+                response_content = coerce_llm_content(last_msg.content)
             elif isinstance(last_msg, (tuple, list)) and len(last_msg) >= 2:
-                response_content = last_msg[1]
+                response_content = coerce_llm_content(last_msg[1])
             else:
                 response_content = str(last_msg)
+        else:
+            response_content = coerce_llm_content(response_content)
         last_agent = result.get("last_agent", "response")
 
         # 模拟流式输出（逐字发送）

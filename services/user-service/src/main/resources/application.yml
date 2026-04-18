@@ -57,6 +57,12 @@ logging:
     com.homecare.user: DEBUG
     com.homecare.common: DEBUG
 
+jwt:
+  # access token 默认 1 天，配合前端活跃续期策略
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:86400000}
+  # refresh token 默认 7 天，可按需通过环境变量覆盖
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+
 # 邮件验证码发送配置（预留：你可以在 Nacos/shared.yaml 或环境变量里覆盖）
 app:
   mail:
@@ -67,6 +73,10 @@ app:
     password: ${MAIL_PASSWORD:}
     from: ${MAIL_FROM:}
     ssl: ${MAIL_SSL:true}
+  security:
+    login-rsa:
+      # PKCS#8 PEM private key, used to decrypt login password ciphertext (optional)
+      private-key: ${LOGIN_RSA_PRIVATE_KEY:}
 
 # Actuator 健康检查配置
 management:

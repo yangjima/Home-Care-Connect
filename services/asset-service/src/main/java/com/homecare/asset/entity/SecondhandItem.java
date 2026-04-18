@@ -29,6 +29,9 @@ public class SecondhandItem {
 
     private BigDecimal price;
 
+    /** 原价（展示划线价，可选） */
+    private BigDecimal originalPrice;
+
     @TableField("`condition`")
     private String condition;
 
@@ -36,6 +39,11 @@ public class SecondhandItem {
     private String image;
 
     private String images;
+
+    private String contact;
+
+    /** 自提/交易地点（展示用） */
+    private String location;
 
     private String status;
 

@@ -5,6 +5,14 @@ import os
 from typing import Optional
 
 
+def _env_stripped(name: str) -> Optional[str]:
+    v = os.getenv(name)
+    if not v:
+        return None
+    s = v.strip().strip("\ufeff")
+    return s or None
+
+
 class Settings:
     """应用配置"""
 
@@ -13,7 +21,7 @@ class Settings:
     PORT: int = int(os.getenv("AI_PORT", "8000"))
 
     # DashScope (阿里云百炼) LLM 配置
-    DASHSCOPE_API_KEY: Optional[str] = os.getenv("DASHSCOPE_API_KEY")
+    DASHSCOPE_API_KEY: Optional[str] = _env_stripped("DASHSCOPE_API_KEY")
     DASHSCOPE_BASE_URL: str = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
     # LLM 模型配置
@@ -33,11 +41,11 @@ class Settings:
     # LangGraph 检查点配置
     CHECKPOINT_ENABLED: bool = True
 
-    # 第三方服务地址（用于工具调用）
-    USER_SERVICE_URL: str = os.getenv("USER_SERVICE_URL", "http://127.0.0.1:8081")
-    PROPERTY_SERVICE_URL: str = os.getenv("PROPERTY_SERVICE_URL", "http://127.0.0.1:8082")
-    SERVICE_ORDER_URL: str = os.getenv("SERVICE_ORDER_URL", "http://127.0.0.1:8082")
-    ASSET_SERVICE_URL: str = os.getenv("ASSET_SERVICE_URL", "http://127.0.0.1:8083")
+    # 第三方服务地址（用于工具调用；默认走本机网关，路径与各服务 StripPrefix 后路由一致）
+    USER_SERVICE_URL: str = os.getenv("USER_SERVICE_URL", "http://127.0.0.1:8080/api/user")
+    PROPERTY_SERVICE_URL: str = os.getenv("PROPERTY_SERVICE_URL", "http://127.0.0.1:8080/api/property")
+    SERVICE_ORDER_URL: str = os.getenv("SERVICE_ORDER_URL", "http://127.0.0.1:8080/api/service")
+    ASSET_SERVICE_URL: str = os.getenv("ASSET_SERVICE_URL", "http://127.0.0.1:8080/api/asset")
 
     # 日志级别
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

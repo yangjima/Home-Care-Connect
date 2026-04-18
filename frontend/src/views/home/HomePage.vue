@@ -40,7 +40,7 @@
           </router-link>
           <router-link to="/secondhand" class="quick-link">
             <span class="ql-icon">🔄</span>
-            <span>二手交易</span>
+            <span>跳蚤市场</span>
           </router-link>
           <router-link to="/ai" class="quick-link">
             <span class="ql-icon">🤖</span>

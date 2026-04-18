@@ -19,8 +19,12 @@
         <router-link to="/purchase" class="nav-link" :class="{ active: route.path === '/purchase' }">
           本地商城
         </router-link>
-        <router-link to="/secondhand" class="nav-link" :class="{ active: route.path === '/secondhand' }">
-          二手交易
+        <router-link
+          to="/secondhand"
+          class="nav-link"
+          :class="{ active: route.path === '/secondhand' || route.path.startsWith('/secondhand/') }"
+        >
+          跳蚤市场
         </router-link>
         <router-link to="/ai" class="nav-link" :class="{ active: route.path === '/ai' }">
           AI 助手
@@ -34,15 +38,15 @@
               <el-avatar :size="32" :src="authStore.userInfo?.avatar">
                 {{ authStore.userInfo?.nickname?.[0] || authStore.userInfo?.username?.[0] || 'U' }}
               </el-avatar>
-              <span class="username">{{ authStore.userInfo?.nickname || authStore.userInfo?.username }}</span>
+              <span class="username">{{ displayNickname }}</span>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">
                   <el-icon><User /></el-icon>个人中心
                 </el-dropdown-item>
-                <el-dropdown-item command="orders">
-                  <el-icon><List /></el-icon>我的订单
+                <el-dropdown-item v-if="canAdmin" command="admin">
+                  <el-icon><Shop /></el-icon>系统后台
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>退出登录
@@ -70,7 +74,7 @@
       <router-link to="/properties" class="mobile-link" @click="mobileMenuOpen = false">找房源</router-link>
       <router-link to="/services" class="mobile-link" @click="mobileMenuOpen = false">找服务</router-link>
       <router-link to="/purchase" class="mobile-link" @click="mobileMenuOpen = false">本地商城</router-link>
-      <router-link to="/secondhand" class="mobile-link" @click="mobileMenuOpen = false">二手交易</router-link>
+      <router-link to="/secondhand" class="mobile-link" @click="mobileMenuOpen = false">跳蚤市场</router-link>
       <router-link to="/ai" class="mobile-link" @click="mobileMenuOpen = false">AI 助手</router-link>
     </div>
   </div>
@@ -80,13 +84,20 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { User, List, SwitchButton, Menu } from '@element-plus/icons-vue'
+import { User, SwitchButton, Menu, Shop } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { canAccessAdmin } from '@/constants/roles'
+import { computed } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
+const canAdmin = computed(() => canAccessAdmin(authStore.userInfo?.role))
+const displayNickname = computed(() => {
+  const raw = authStore.userInfo?.nickname || authStore.userInfo?.username || ''
+  return raw.slice(0, 12)
+})
 
 async function handleUserCommand(command: string) {
   if (command === 'logout') {
@@ -96,8 +107,8 @@ async function handleUserCommand(command: string) {
     router.push('/home')
   } else if (command === 'profile') {
     router.push('/user/profile')
-  } else if (command === 'orders') {
-    router.push('/user/orders')
+  } else if (command === 'admin') {
+    router.push('/admin/dashboard')
   }
 }
 </script>

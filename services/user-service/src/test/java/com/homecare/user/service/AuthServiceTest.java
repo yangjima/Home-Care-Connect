@@ -8,6 +8,7 @@ import com.homecare.user.dto.TokenResponse;
 import com.homecare.user.dto.UserResponse;
 import com.homecare.user.entity.User;
 import com.homecare.user.repository.UserRepository;
+import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.impl.AuthServiceImpl;
 import com.homecare.user.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +56,15 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthServiceImpl(userRepository, userService, jwtUtil, passwordEncoder, redisTemplate);
-        ReflectionTestUtils.setField(authService, "accessTokenExpiration", 7200000L);
+        authService = new AuthServiceImpl(
+                userRepository,
+                userService,
+                jwtUtil,
+                passwordEncoder,
+                redisTemplate,
+                new RsaPasswordDecryptor("")
+        );
+        ReflectionTestUtils.setField(authService, "accessTokenExpiration", 86400000L);
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", 604800000L);
     }
 
@@ -87,7 +95,7 @@ class AuthServiceTest {
             assertEquals("access_token_123", response.getAccessToken());
             assertEquals("refresh_token_456", response.getRefreshToken());
             assertEquals("Bearer", response.getTokenType());
-            assertEquals(7200, response.getExpiresIn());
+            assertEquals(86400, response.getExpiresIn());
         }
 
         @Test

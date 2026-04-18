@@ -11,7 +11,7 @@
           <h4>快速链接</h4>
           <router-link to="/properties">找房源</router-link>
           <router-link to="/services">找服务</router-link>
-          <router-link to="/secondhand">二手交易</router-link>
+          <router-link to="/secondhand">跳蚤市场</router-link>
           <router-link to="/ai">AI 助手</router-link>
         </div>
 

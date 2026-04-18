@@ -7,6 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from graph.state import ChatState
 from llm import get_llm
+from message_text import coerce_llm_content
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +108,11 @@ async def response_agent(state: ChatState) -> ChatState:
         ]
 
         response = await llm.ainvoke(messages)
+        text = coerce_llm_content(getattr(response, "content", response))
 
         return {
             **state,
-            "response": response.content,
+            "response": text,
             "last_agent": "general",
         }
 

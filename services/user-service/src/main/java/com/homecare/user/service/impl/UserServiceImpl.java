@@ -15,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +57,13 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
 
+        if (user.getUsername() != null && !user.getUsername().equals(existingUser.getUsername())) {
+            throw new BusinessException(400, "用户名不允许修改");
+        }
+        if (user.getEmail() != null && !user.getEmail().equals(existingUser.getEmail())) {
+            throw new BusinessException(400, "邮箱不允许修改");
+        }
+
         // 只允许更新部分字段
         if (user.getRealName() != null) {
             existingUser.setRealName(user.getRealName());
@@ -69,13 +77,6 @@ public class UserServiceImpl implements UserService {
                 throw new BusinessException(400, "手机号已被其他用户使用");
             }
             existingUser.setPhone(user.getPhone());
-        }
-        if (user.getEmail() != null) {
-            // 检查邮箱是否被其他用户占用
-            if (isEmailExistsForOther(user.getEmail(), id)) {
-                throw new BusinessException(400, "邮箱已被其他用户使用");
-            }
-            existingUser.setEmail(user.getEmail());
         }
         if (user.getAvatar() != null) {
             existingUser.setAvatar(user.getAvatar());
@@ -149,6 +150,29 @@ public class UserServiceImpl implements UserService {
         userRepository.updateById(user);
 
         log.info("更新用户 {} 状态为 {}", user.getUsername(), status);
+    }
+
+    private static final Set<String> KNOWN_ROLES = Set.of(
+            "admin", "store_manager", "supplier", "tenant", "user",
+            "distributor", "service_staff");
+
+    @Override
+    public UserResponse updateUserRole(Long id, String role) {
+        if (role == null || role.isBlank()) {
+            throw new BusinessException(400, "角色不能为空");
+        }
+        String normalized = role.trim();
+        if (!KNOWN_ROLES.contains(normalized)) {
+            throw new BusinessException(400, "无效角色: " + normalized);
+        }
+        User user = userRepository.selectById(id);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        user.setRole(normalized);
+        userRepository.updateById(user);
+        log.info("更新用户 {} 角色为 {}", user.getUsername(), normalized);
+        return toUserResponse(user);
     }
 
     @Override

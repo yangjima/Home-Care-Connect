@@ -46,4 +46,7 @@ public class PropertyCreateRequest {
     private String coverImage;
     /** 图片URL列表 */
     private List<String> images;
+
+    /** 视频URL列表 */
+    private List<String> videos;
 }

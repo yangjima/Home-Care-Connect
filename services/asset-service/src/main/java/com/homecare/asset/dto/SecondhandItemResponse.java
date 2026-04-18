@@ -19,6 +19,7 @@ public class SecondhandItemResponse {
     private String description;
     private String category;
     private BigDecimal price;
+    private BigDecimal originalPrice;
     private String condition;
     private String image;
     private String images;
@@ -26,4 +27,9 @@ public class SecondhandItemResponse {
     private Long viewCount;
     private LocalDateTime expireTime;
     private LocalDateTime createTime;
+
+    /** 是否展示「诚信」标签（由业务规则推导，原型展示用） */
+    private Boolean integrityTag;
+
+    private String location;
 }

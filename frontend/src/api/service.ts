@@ -1,17 +1,61 @@
 /**
  * 服务订单 API
  */
-import { get, post, del } from '@/utils/request'
-import type { PageParams, PageResult } from '@/types'
+import { get, post, del, put } from '@/utils/request'
+import type { PageParams, PageResult, ServiceStaffPublic } from '@/types'
 
-// 服务类型列表
-export function getServiceTypes(params?: { keyword?: string }) {
-  return get<object[]>('/service/service-types', params)
+/** 公开：优秀服务人员（服务列表页） */
+export function getStaffList() {
+  return get<ServiceStaffPublic[]>('/service/staff')
+}
+
+// 服务类型列表（默认仅上架）
+export function getServiceTypes(params?: { keyword?: string; activeOnly?: boolean }) {
+  return get<object[]>('/service/service-types', { activeOnly: true, ...params })
 }
 
 // 服务类型详情
 export function getServiceTypeDetail(id: number) {
   return get<object>(`/service/service-types/${id}`)
+}
+
+export function createServiceType(data: {
+  name: string
+  description?: string
+  category?: string
+  price: number
+  unit?: string
+  icon?: string
+}) {
+  return post<object>('/service/service-types', data)
+}
+
+export function updateServiceType(
+  id: number,
+  data: { name: string; description?: string; category: string; price: number; unit?: string; icon?: string },
+) {
+  return put<object>(`/service/service-types/${id}`, data)
+}
+
+export function deleteServiceType(id: number) {
+  return del(`/service/service-types/${id}`)
+}
+
+/** 平台管理员：待上架审核的服务类型 */
+export function getPendingServiceTypes() {
+  return get<object[]>('/service/service-types/admin/pending')
+}
+
+export function approveServiceTypeListing(id: number) {
+  return post<object>(`/service/service-types/${id}/approve-listing`)
+}
+
+export function rejectServiceTypeListing(id: number) {
+  return post<object>(`/service/service-types/${id}/reject-listing`)
+}
+
+export function submitServiceTypeListing(id: number) {
+  return post<object>(`/service/service-types/${id}/submit-listing`)
 }
 
 // 创建服务订单
@@ -26,7 +70,7 @@ export function createServiceOrder(data: {
 }
 
 // 订单列表
-export function getOrderList(params: PageParams & { status?: number }) {
+export function getOrderList(params: PageParams & { status?: string }) {
   const { page, size, ...rest } = params
   return get<PageResult<object>>('/service/orders', { page, pageSize: size, ...rest })
 }

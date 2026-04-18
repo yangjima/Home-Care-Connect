@@ -1,7 +1,7 @@
 <template>
   <div class="property-card" @click="$router.push(`/properties/${property.id}`)">
     <div class="card-image">
-      <img :src="(property.images && property.images[0]) || '/placeholder-property.jpg'" :alt="property.title" />
+      <img :src="getCardImage()" :alt="property.title" />
       <span class="card-tag">{{ property.type || '普通住宅' }}</span>
     </div>
     <div class="card-body">
@@ -17,7 +17,7 @@
       </div>
       <div class="card-footer">
         <span class="price">
-          <em>¥</em>{{ property.price }}
+          <em>¥</em>{{ getCardPrice() }}
           <span class="unit">/月</span>
         </span>
       </div>
@@ -29,7 +29,18 @@
 import { Location } from '@element-plus/icons-vue'
 import type { Property } from '@/types'
 
-defineProps<{ property: Partial<Property> }>()
+const props = defineProps<{ property: Partial<Property> }>()
+
+function getCardImage() {
+  const record = props.property as any
+  const image = record.coverImage || record.coverUrl || (props.property.images && props.property.images[0]) || '/placeholder-property.jpg'
+  return image
+}
+
+function getCardPrice() {
+  const resolved = (props.property as any).rentPrice ?? props.property.price ?? '—'
+  return resolved
+}
 </script>
 
 <style scoped lang="scss">

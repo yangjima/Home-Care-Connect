@@ -53,6 +53,9 @@ export interface Property {
   decoration: string
   description?: string
   images?: string[]
+  videos?: string[]
+  /** 列表封面，需在 images 中 */
+  coverImage?: string
   status: number | string
   createTime?: string
 }
@@ -73,11 +76,23 @@ export interface ServiceType {
   id: number
   name: string
   description?: string
+  /** cleaning | repair | other */
+  category?: string
   price: number
   unit: string
   icon?: string
   sortOrder?: number
   status: number
+}
+
+/** 服务列表页公开服务人员（/api/service/staff） */
+export interface ServiceStaffPublic {
+  id: number
+  name: string
+  skillsLabel: string
+  rating: number
+  completedOrders: number
+  avatar?: string
 }
 
 export interface ServiceStaff {
@@ -140,9 +155,11 @@ export interface ProcurementProduct {
   stock: number
   unit?: string
   image?: string
-  images?: string[]
+  images?: string[] | string
+  salesCount?: number
+  productTag?: string | null
   storeId?: number
-  status: number
+  status?: number | string
   createTime?: string
 }
 
@@ -154,13 +171,18 @@ export interface SecondhandItem {
   description?: string
   category: string
   price: number
+  originalPrice?: number
   condition: string
   image?: string
   images?: string[]
-  status: number
-  viewCount: number
+  status: number | string
+  viewCount?: number
   expireTime?: string
   createTime?: string
+  /** 卖家展示名（后端聚合） */
+  userName?: string
+  integrityTag?: boolean
+  location?: string
 }
 
 // AI 聊天相关

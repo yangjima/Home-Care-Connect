@@ -3,7 +3,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { chat, createChatWebSocket } from '@/api/ai'
+import { chat, createChatWebSocket, type AIChatResponse } from '@/api/ai'
 import type { ChatMessage, ChatSession } from '@/types'
 import router from '@/router'
 
@@ -53,22 +53,28 @@ export const useAIStore = defineStore('ai', () => {
 
     loading.value = true
     try {
-      const result = await chat(content, currentSessionId.value)
-      const assistantReply = result.reply || '抱歉，我暂时无法回答这个问题。'
+      const result = (await chat(content, currentSessionId.value)) as AIChatResponse | null
+      const payload = result && typeof result === 'object' ? result : ({} as AIChatResponse)
+      const rawReply = payload.reply
+      const assistantReply =
+        typeof rawReply === 'string' && rawReply.trim()
+          ? rawReply.trim()
+          : '抱歉，我暂时无法回答这个问题。'
       addMessage({
         role: 'assistant',
         content: assistantReply,
-        agent: result.intent || currentAgent.value,
+        agent: payload.intent || currentAgent.value,
       })
 
       // 按设计文档：识别出业务意图时跳转对应页面
-      if (result.redirect) {
-        await router.push(result.redirect)
+      if (payload.redirect) {
+        await router.push(payload.redirect)
       }
     } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e)
       addMessage({
         role: 'assistant',
-        content: '抱歉，我遇到了一些问题，请稍后再试。',
+        content: `抱歉，请求失败（${detail}）。请确认本机网关、AI 服务与前端反代正常；使用真实大模型时请在环境变量中配置 DASHSCOPE_API_KEY。`,
       })
     } finally {
       loading.value = false

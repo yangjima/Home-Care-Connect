@@ -34,6 +34,12 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      // 与生产 nginx 一致：媒体 URL 为 /minio/<bucket>/<object>，开发时转发到本机 MinIO API 端口
+      '/minio': {
+        target: 'http://127.0.0.1:9001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/minio/, ''),
+      },
     },
   },
   build: {
