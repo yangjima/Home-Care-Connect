@@ -1,12 +1,12 @@
 /**
  * 用户管理 API（店长后台）
  */
-import { del, get, patch, post } from '@/utils/request'
+import { del, get, patch, post, put } from '@/utils/request'
+import { toPageQuery } from '@/api/pagination'
 import type { PageParams, PageResult, User, UserStats } from '@/types'
 
 export function listUsers(params: PageParams & { role?: string; keyword?: string }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<User>>('/user/users', { page, pageSize: size, ...rest })
+  return get<PageResult<User>>('/user/users', toPageQuery(params))
 }
 
 export function getUserStats() {

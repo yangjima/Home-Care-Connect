@@ -104,7 +104,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { getPropertyList, approvePropertyListing, rejectPropertyListing } from '@/api/property'
 import {
   getProcurementList,
@@ -115,6 +115,9 @@ import {
   rejectSecondhandListing,
 } from '@/api/asset'
 import { getPendingServiceTypes, approveServiceTypeListing, rejectServiceTypeListing } from '@/api/service'
+import { useAdminActions } from '@/composables/useAdminActions'
+
+const { runAction, runConfirmActionSafe } = useAdminActions()
 
 const activeTab = ref('property')
 const typeOptions = [
@@ -256,87 +259,107 @@ function reloadAll() {
 }
 
 async function approveProperty(id: number) {
-  try {
-    await approvePropertyListing(id)
-    ElMessage.success('已通过')
-    await loadProperties()
-  } catch {
-    /* request 已提示 */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确认通过该房源的上架申请？',
+    confirmTitle: '通过',
+    type: 'success',
+    action: async () => {
+      await approvePropertyListing(id)
+      await loadProperties()
+    },
+    successMessage: '已通过',
+  })
 }
 
 async function rejectProperty(id: number) {
-  try {
-    await ElMessageBox.confirm('确定驳回该房源的上架申请？', '驳回', { type: 'warning' })
-    await rejectPropertyListing(id)
-    ElMessage.success('已驳回')
-    await loadProperties()
-  } catch {
-    /* 取消或失败 */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确定驳回该房源的上架申请？',
+    confirmTitle: '驳回',
+    type: 'warning',
+    action: async () => {
+      await rejectPropertyListing(id)
+      await loadProperties()
+    },
+    successMessage: '已驳回',
+  })
 }
 
 async function approveProcurement(id: number) {
-  try {
-    await approveProcurementListing(id)
-    ElMessage.success('已通过')
-    await loadProcurement()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确认通过该商品的上架申请？',
+    confirmTitle: '通过',
+    type: 'success',
+    action: async () => {
+      await approveProcurementListing(id)
+      await loadProcurement()
+    },
+    successMessage: '已通过',
+  })
 }
 
 async function rejectProcurement(id: number) {
-  try {
-    await ElMessageBox.confirm('确定驳回该商品？', '驳回', { type: 'warning' })
-    await rejectProcurementListing(id)
-    ElMessage.success('已驳回')
-    await loadProcurement()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确定驳回该商品？',
+    confirmTitle: '驳回',
+    type: 'warning',
+    action: async () => {
+      await rejectProcurementListing(id)
+      await loadProcurement()
+    },
+    successMessage: '已驳回',
+  })
 }
 
 async function approveService(id: number) {
-  try {
-    await approveServiceTypeListing(id)
-    ElMessage.success('已通过')
-    await loadServices()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确认通过该服务类型的上架申请？',
+    confirmTitle: '通过',
+    type: 'success',
+    action: async () => {
+      await approveServiceTypeListing(id)
+      await loadServices()
+    },
+    successMessage: '已通过',
+  })
 }
 
 async function rejectService(id: number) {
-  try {
-    await ElMessageBox.confirm('确定驳回该服务类型？', '驳回', { type: 'warning' })
-    await rejectServiceTypeListing(id)
-    ElMessage.success('已驳回')
-    await loadServices()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确定驳回该服务类型？',
+    confirmTitle: '驳回',
+    type: 'warning',
+    action: async () => {
+      await rejectServiceTypeListing(id)
+      await loadServices()
+    },
+    successMessage: '已驳回',
+  })
 }
 
 async function approveSecondhand(id: number) {
-  try {
-    await approveSecondhandListing(id)
-    ElMessage.success('已通过')
-    await loadSecondhand()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确认通过该闲置商品的上架申请？',
+    confirmTitle: '通过',
+    type: 'success',
+    action: async () => {
+      await approveSecondhandListing(id)
+      await loadSecondhand()
+    },
+    successMessage: '已通过',
+  })
 }
 
 async function rejectSecondhand(id: number) {
-  try {
-    await ElMessageBox.confirm('确定驳回该闲置商品？', '驳回', { type: 'warning' })
-    await rejectSecondhandListing(id)
-    ElMessage.success('已驳回')
-    await loadSecondhand()
-  } catch {
-    /* */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确定驳回该闲置商品？',
+    confirmTitle: '驳回',
+    type: 'warning',
+    action: async () => {
+      await rejectSecondhandListing(id)
+      await loadSecondhand()
+    },
+    successMessage: '已驳回',
+  })
 }
 
 onMounted(() => {

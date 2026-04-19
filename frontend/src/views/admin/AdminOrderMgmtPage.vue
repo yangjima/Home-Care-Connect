@@ -64,7 +64,7 @@
               <el-button size="small" class="btn-view" @click="openDetail(row)">查看</el-button>
               <template v-if="isPlatformAdmin(role)">
                 <el-button
-                  v-if="row.status === 'pending'"
+                  v-if="toOrderStatusKey(String(row.status)) === 'pending'"
                   size="small"
                   type="warning"
                   @click="doConfirm(row)"
@@ -92,13 +92,20 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { confirmOrder, getOrderList } from '@/api/service'
 import { isPlatformAdmin } from '@/constants/roles'
 import { useAuthStore } from '@/stores/auth'
+import { useAdminActions } from '@/composables/useAdminActions'
+import {
+  orderStatusClass as commonOrderStatusClass,
+  orderStatusLabelForAdmin,
+  toOrderStatusKey,
+} from '@/utils/status'
 
 const authStore = useAuthStore()
 const role = computed(() => authStore.userInfo?.role || '')
+const { runConfirmActionSafe } = useAdminActions()
 
 const loading = ref(false)
 const rows = ref<Record<string, unknown>[]>([])
@@ -120,22 +127,14 @@ const filteredRows = computed(() => {
 })
 
 function orderStatusText(s: string) {
-  const m: Record<string, string> = {
-    pending: '待付款',
-    assigned: '待服务',
-    accepted: '已支付',
-    in_progress: '进行中',
-    completed: '已完成',
-    cancelled: '已取消',
-  }
-  return m[s] || s
+  return orderStatusLabelForAdmin(s)
 }
 
 function orderStatusClass(s: string) {
-  if (s === 'completed') return 'status-completed'
-  if (s === 'cancelled') return 'status-cancelled'
-  if (s === 'pending') return 'status-pending'
-  if (s === 'accepted' || s === 'assigned') return 'status-paid'
+  const base = commonOrderStatusClass(s)
+  if (base === 'completed') return 'status-completed'
+  if (base === 'cancelled') return 'status-cancelled'
+  if (base === 'confirmed') return 'status-paid'
   return 'status-pending'
 }
 
@@ -160,14 +159,15 @@ function openDetail(row: Record<string, unknown>) {
 }
 
 async function doConfirm(row: Record<string, unknown>) {
-  try {
-    await ElMessageBox.confirm('确认将该订单设为已派单？', '处理订单')
-    await confirmOrder(Number(row.id))
-    ElMessage.success('已确认')
-    await load()
-  } catch {
-    /* cancel */
-  }
+  await runConfirmActionSafe({
+    confirmMessage: '确认将该订单设为已派单？',
+    confirmTitle: '处理订单',
+    action: async () => {
+      await confirmOrder(Number(row.id))
+      await load()
+    },
+    successMessage: '已确认',
+  })
 }
 
 onMounted(load)

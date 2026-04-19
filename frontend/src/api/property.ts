@@ -2,6 +2,7 @@
  * 房源 API
  */
 import { get, post, put, del } from '@/utils/request'
+import { toOptionalPageQuery, toPageQuery } from '@/api/pagination'
 import type { PageParams, PageResult } from '@/types'
 
 export type PropertyListSort =
@@ -54,11 +55,7 @@ export function createViewing(data: {
 
 // 我的看房预约
 export function getMyViewings(params?: PageParams) {
-  if (!params) {
-    return get<PageResult<object>>('/property/viewings')
-  }
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/property/viewings', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/property/viewings', toOptionalPageQuery(params))
 }
 
 // 创建房源
@@ -139,6 +136,5 @@ export function recommendProperty(id: number, recommended: boolean) {
 
 // 我的房源
 export function getMyProperties(params: PageParams & { ownerId: number }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/property/properties', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/property/properties', toPageQuery(params))
 }

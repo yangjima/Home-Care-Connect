@@ -42,7 +42,7 @@
             去支付
           </el-button>
           <el-button v-if="canCancel(order)" size="small" @click="handleCancel(order.id)">取消订单</el-button>
-          <el-button v-if="toStatusKey(order.status) === 'completed'" size="small" @click="handleReview(order.id)">评价</el-button>
+          <el-button v-if="toOrderStatusKey(order.status) === 'completed'" size="small" @click="handleReview(order.id)">评价</el-button>
           <el-button size="small" @click="viewDetail(order.id)">查看详情</el-button>
         </div>
       </div>
@@ -70,6 +70,12 @@ import UserSubpageHeader from '@/components/user/UserSubpageHeader.vue'
 import { useServiceStore } from '@/stores/service'
 import type { ServiceOrder } from '@/types'
 import { createReview, getOrderDetail } from '@/api/service'
+import {
+  orderStatusClass,
+  orderStatusLabel,
+  orderStatusType,
+  toOrderStatusKey,
+} from '@/utils/status'
 
 const serviceStore = useServiceStore()
 
@@ -80,58 +86,22 @@ const pageSize = ref(10)
 const total = ref(0)
 const filterStatus = ref('')
 
-const statusMap: Record<string, string> = {
-  pending: '待处理',
-  assigned: '已确认',
-  accepted: '已接单',
-  in_progress: '服务中',
-  completed: '已完成',
-  cancelled: '已取消',
-}
-
 const payStatusMap: Record<string, string> = {
   pending: '待支付',
   paid: '已支付',
   refunded: '已退款',
 }
 
-function toStatusKey(status: number | string): string {
-  if (typeof status === 'number') {
-    if (status === 0) return 'pending'
-    if (status === 1) return 'assigned'
-    if (status === 2) return 'in_progress'
-    if (status === 3) return 'completed'
-    if (status === 4) return 'cancelled'
-  }
-  return String(status || '')
-}
-
 function statusLabel(status: number | string): string {
-  return statusMap[toStatusKey(status)] || '未知'
+  return orderStatusLabel(status)
 }
 
 function statusClass(status: number | string): string {
-  const map: Record<string, string> = {
-    pending: 'pending',
-    assigned: 'confirmed',
-    accepted: 'confirmed',
-    in_progress: 'processing',
-    completed: 'completed',
-    cancelled: 'cancelled',
-  }
-  return map[toStatusKey(status)] || ''
+  return orderStatusClass(status)
 }
 
 function statusType(status: number | string) {
-  const map: Record<string, 'warning' | 'success' | 'info' | 'primary'> = {
-    pending: 'warning',
-    assigned: 'primary',
-    accepted: 'primary',
-    in_progress: 'primary',
-    completed: 'success',
-    cancelled: 'info',
-  }
-  return map[toStatusKey(status)] || 'info'
+  return orderStatusType(status)
 }
 
 function toPayStatusKey(status: number | string | null): string {
@@ -169,11 +139,11 @@ function getStatusParam(status: string): string | undefined {
 }
 
 function canPay(order: ServiceOrder): boolean {
-  return toStatusKey(order.status) === 'pending'
+  return toOrderStatusKey(order.status) === 'pending'
 }
 
 function canCancel(order: ServiceOrder): boolean {
-  const status = toStatusKey(order.status)
+  const status = toOrderStatusKey(order.status)
   return ['pending', 'assigned', 'accepted', 'in_progress'].includes(status)
 }
 

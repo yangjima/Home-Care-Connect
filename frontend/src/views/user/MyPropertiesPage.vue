@@ -30,7 +30,7 @@
             <span class="status-tag" :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
             <el-button size="small" @click="viewDetail(item.id)">查看</el-button>
             <el-button
-              v-if="['pending', 'rejected', 'reserved'].includes(String(item.status))"
+              v-if="['pending', 'rejected', 'reserved'].includes(toPropertyStatusKey(item.status))"
               size="small"
               type="primary"
               plain
@@ -79,6 +79,7 @@ import {
   publishProperty,
 } from '@/api/property'
 import { useAuthStore } from '@/stores/auth'
+import { propertyStatusClass, propertyStatusLabel, toPropertyStatusKey } from '@/utils/status'
 
 const loading = ref(false)
 const properties = ref<Property[]>([])
@@ -91,42 +92,12 @@ const editingId = ref<number | null>(null)
 const authStore = useAuthStore()
 const router = useRouter()
 
-const statusMap: Record<string, string> = {
-  pending: '待审核',
-  rejected: '已驳回',
-  vacant: '已上架',
-  occupied: '已出租',
-  reserved: '已下架',
-  published: '已上架',
-  rented: '已出租',
-  offline: '已下架',
-}
-
-function toStatusKey(status: number | string): string {
-  if (typeof status === 'number') {
-    if (status === 0) return 'pending'
-    if (status === 1) return 'published'
-    if (status === 2) return 'offline'
-  }
-  return String(status || '')
-}
-
 function statusLabel(status: number | string): string {
-  return statusMap[toStatusKey(status)] ?? '未知'
+  return propertyStatusLabel(status)
 }
 
 function statusClass(status: number | string): string {
-  const map: Record<string, string> = {
-    pending: 'pending',
-    rejected: 'pending',
-    vacant: 'active',
-    occupied: 'inactive',
-    reserved: 'inactive',
-    published: 'active',
-    rented: 'inactive',
-    offline: 'inactive',
-  }
-  return map[toStatusKey(status)] || ''
+  return propertyStatusClass(status)
 }
 
 function parseLayout(layout?: string): { rooms: number; livingRooms: number; bathrooms: number } {

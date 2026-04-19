@@ -2,13 +2,13 @@
  * 资产 API (采购 + 二手)
  */
 import { get, post, del, put } from '@/utils/request'
+import { toOptionalPageQuery, toPageQuery } from '@/api/pagination'
 import type { PageParams, PageResult } from '@/types'
 
 // ========== 采购商品 ==========
 
 export function getProcurementList(params: PageParams & { category?: string; sort?: string; status?: string }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/asset/procurement-products', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/asset/procurement-products', toPageQuery(params))
 }
 
 /** GET /asset/procurement-products/summary — 已上架商品总数（首页统计用） */
@@ -43,8 +43,7 @@ export function rejectProcurementListing(id: number) {
 // ========== 二手物品 ==========
 
 export function getSecondhandList(params: PageParams & { category?: string; condition?: string; status?: string }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/asset/secondhand-items', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/asset/secondhand-items', toPageQuery(params))
 }
 
 export function getSecondhandSummary() {
@@ -80,9 +79,5 @@ export function submitSecondhandListing(id: number) {
 }
 
 export function getMySecondhandItems(params?: PageParams) {
-  if (!params) {
-    return get<PageResult<object>>('/asset/secondhand-items/my')
-  }
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/asset/secondhand-items/my', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/asset/secondhand-items/my', toOptionalPageQuery(params))
 }

@@ -2,6 +2,7 @@
  * 服务订单 API
  */
 import { get, post, del, put } from '@/utils/request'
+import { toOptionalPageQuery, toPageQuery } from '@/api/pagination'
 import type { PageParams, PageResult, ServiceStaffPublic } from '@/types'
 
 /** 公开：优秀服务人员（服务列表页） */
@@ -71,8 +72,7 @@ export function createServiceOrder(data: {
 
 // 订单列表
 export function getOrderList(params: PageParams & { status?: string }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/service/orders', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/service/orders', toPageQuery(params))
 }
 
 // 订单详情
@@ -111,17 +111,12 @@ export function deleteOrder(id: number) {
 
 // 我的订单
 export function getMyOrders(params?: (PageParams & { status?: string })) {
-  if (!params) {
-    return get<PageResult<object>>('/service/orders/my')
-  }
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/service/orders/my', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/service/orders/my', toOptionalPageQuery(params))
 }
 
 // 评价列表
 export function getReviewList(params: PageParams & { orderId?: number; staffId?: number }) {
-  const { page, size, ...rest } = params
-  return get<PageResult<object>>('/service/reviews', { page, pageSize: size, ...rest })
+  return get<PageResult<object>>('/service/reviews', toPageQuery(params))
 }
 
 // 创建评价

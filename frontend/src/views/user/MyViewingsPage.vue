@@ -31,6 +31,7 @@
 import { onMounted, ref } from 'vue'
 import UserSubpageHeader from '@/components/user/UserSubpageHeader.vue'
 import { getMyViewings } from '@/api/property'
+import { viewingStatusLabel, viewingStatusType } from '@/utils/status'
 
 const loading = ref(false)
 const rows = ref<Record<string, unknown>[]>([])
@@ -39,23 +40,11 @@ const page = ref(1)
 const size = ref(10)
 
 function statusText(s: string) {
-  const m: Record<string, string> = {
-    pending: '待确认',
-    confirmed: '已确认',
-    cancelled: '已取消',
-    completed: '已完成',
-  }
-  return m[s] || s
+  return viewingStatusLabel(s)
 }
 
 function statusType(s: string) {
-  const m: Record<string, 'warning' | 'success' | 'info' | 'danger'> = {
-    pending: 'warning',
-    confirmed: 'success',
-    completed: 'success',
-    cancelled: 'info',
-  }
-  return m[s] || 'info'
+  return viewingStatusType(s)
 }
 
 async function load() {
