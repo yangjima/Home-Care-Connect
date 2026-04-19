@@ -1,0 +1,11 @@
+# 示例：复制为 application-local.yml（已在 .gitignore）后填入私钥。
+# 私钥须与 frontend/.env.example 中的 VITE_LOGIN_RSA_PUBLIC_KEY 为同一对。
+# 生产环境推荐用环境变量 LOGIN_RSA_PRIVATE_KEY（整段 PEM，换行可用 \n），勿将私钥提交到 Git。
+#
+# app:
+#   security:
+#     login-rsa:
+#       private-key: |
+#         -----BEGIN PRIVATE KEY-----
+#         （粘贴 PKCS#8 私钥）
+#         -----END PRIVATE KEY-----
