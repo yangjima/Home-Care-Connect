@@ -1,5 +1,5 @@
 /**
- * 全局类型声明文件
+ * 全局类型声明（单一入口，勿为每个 .vue 再建 *.vue.d.ts）
  */
 
 /// <reference types="vite/client" />

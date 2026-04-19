@@ -112,6 +112,15 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'stores',
+        name: 'AdminStores',
+        component: () => import('@/views/admin/AdminStoreMgmtPage.vue'),
+        meta: {
+          title: '门店管理',
+          adminRoles: [ROLE_ADMIN],
+        },
+      },
+      {
         path: 'properties',
         name: 'AdminProperties',
         component: () => import('@/views/admin/AdminPropertyMgmtPage.vue'),
@@ -149,12 +158,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'services/new',
-        name: 'AdminServiceCreate',
-        component: () => import('@/views/admin/AdminServiceCreatePage.vue'),
-        meta: {
-          title: '添加服务',
-          adminRoles: [ROLE_ADMIN, ROLE_STORE_MANAGER],
-        },
+        redirect: { name: 'AdminServices' },
       },
       {
         path: 'products',
@@ -197,7 +201,7 @@ const routes: RouteRecordRaw[] = [
         name: 'AdminStaff',
         component: () => import('@/views/admin/AdminStaffMgmtPage.vue'),
         meta: {
-          title: '员工管理',
+          title: '用户管理',
           adminRoles: [ROLE_ADMIN, ROLE_STORE_MANAGER],
         },
       },

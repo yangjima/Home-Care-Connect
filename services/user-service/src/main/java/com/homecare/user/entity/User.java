@@ -76,4 +76,16 @@ public class User {
      */
     @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    /**
+     * 首次登录时间
+     */
+    @TableField("first_login_at")
+    private LocalDateTime firstLoginAt;
+
+    /**
+     * 最近登录时间
+     */
+    @TableField("last_login_at")
+    private LocalDateTime lastLoginAt;
 }

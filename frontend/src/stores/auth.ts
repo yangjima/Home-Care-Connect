@@ -139,7 +139,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email: string, password: string) {
-    const encryptedPassword = await encryptLoginPassword(password)
+    let encryptedPassword: string
+    try {
+      encryptedPassword = await encryptLoginPassword(password)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '密码加密失败'
+      ElMessage.error(msg)
+      throw e
+    }
     const result = await apiLogin({ username: email, password: encryptedPassword })
     accessToken.value = result.accessToken
     refreshToken.value = result.refreshToken
@@ -154,8 +161,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(email: string, code: string, password: string, confirmPassword: string) {
-    const encryptedPassword = await encryptLoginPassword(password)
-    const encryptedConfirmPassword = await encryptLoginPassword(confirmPassword)
+    let encryptedPassword: string
+    let encryptedConfirmPassword: string
+    try {
+      encryptedPassword = await encryptLoginPassword(password)
+      encryptedConfirmPassword = await encryptLoginPassword(confirmPassword)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '密码加密失败'
+      ElMessage.error(msg)
+      throw e
+    }
     await apiRegisterByEmail({ email, code, password: encryptedPassword, confirmPassword: encryptedConfirmPassword })
     await login(email, password)
     await fetchUserInfo()

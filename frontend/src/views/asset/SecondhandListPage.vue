@@ -2,17 +2,20 @@
   <div class="secondhand-page">
     <AppHeader />
     <main class="content">
-      <div class="tab-bar">
-        <div
-          v-for="tab in tabs"
-          :key="tab.value || 'all'"
-          class="tab-item"
-          :class="{ active: activeCategory === tab.value }"
-          @click="onSelectTab(tab.value)"
-        >
-          {{ tab.label }}
+      <section class="category-tabs">
+        <div class="tabs-container">
+          <button
+            v-for="tab in tabs"
+            :key="tab.value || 'all'"
+            type="button"
+            class="tab-item"
+            :class="{ active: activeCategory === tab.value }"
+            @click="onSelectTab(tab.value)"
+          >
+            {{ tab.label }}
+          </button>
         </div>
-      </div>
+      </section>
 
       <div class="publish-bar">
         <div class="publish-info">
@@ -23,14 +26,19 @@
       </div>
 
       <div class="search-wrap">
-        <input
-          v-model.trim="keywordInput"
-          type="text"
-          class="search-section-input"
-          placeholder="🔍 搜索跳蚤市场商品..."
-          @keyup.enter="runSearch"
-          @input="scheduleSearch"
-        />
+        <form class="search-form" @submit.prevent="runSearch">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            v-model.trim="keywordInput"
+            type="search"
+            class="search-input"
+            placeholder="搜索跳蚤市场物品..."
+            autocomplete="off"
+            @keyup.enter="runSearch"
+            @input="scheduleSearch"
+          />
+          <button type="submit" class="search-btn">搜索</button>
+        </form>
       </div>
 
       <div v-loading="loading" class="masonry-wrap">
@@ -246,6 +254,8 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 $primary: #2c7be5;
+$banner-from: #667eea;
+$banner-to: #764ba2;
 $page-bg: #f0f2f5;
 
 .secondhand-page {
@@ -261,37 +271,41 @@ $page-bg: #f0f2f5;
   padding: 16px 20px 32px;
 }
 
-.tab-bar {
+/* 分类标签：与找服务 ServiceListPage 一致 */
+.category-tabs {
   background: #fff;
   border-radius: 12px;
-  padding: 0;
+  padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tabs-container {
   display: flex;
-  overflow: hidden;
+  gap: 15px;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
 .tab-item {
-  flex: 1;
-  min-width: 96px;
-  padding: 14px 8px;
-  text-align: center;
-  font-size: 14px;
-  color: #666;
+  padding: 12px 30px;
+  border: 1px solid #e0e0e0;
+  border-radius: 25px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
   transition: all 0.3s;
-  user-select: none;
+  font-size: 15px;
+  color: #666;
+  background: #fff;
 
   &:hover {
-    background: #f8f9fa;
+    border-color: $primary;
+    color: $primary;
   }
 
   &.active {
-    color: $primary;
-    border-bottom-color: $primary;
-    font-weight: 600;
+    background-color: $primary;
+    color: #fff;
+    border-color: $primary;
   }
 }
 
@@ -330,26 +344,62 @@ $page-bg: #f0f2f5;
   }
 }
 
+/* 搜索条：与本地商城 PurchasePage 横幅搜索一致 */
 .search-wrap {
   margin-bottom: 20px;
-  padding: 10px 15px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.search-section-input {
-  width: 100%;
-  max-width: none;
-  padding: 12px 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.3s;
+.search-form {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 50px;
+  padding: 5px 5px 5px 18px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s;
 
-  &:focus {
-    border-color: $primary;
+  &:focus-within {
+    box-shadow: 0 6px 30px rgba(44, 123, 229, 0.3), 0 0 0 2px rgba(44, 123, 229, 0.35);
+  }
+}
+
+.search-icon {
+  color: $banner-to;
+  font-size: 18px;
+  margin-right: 8px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #333;
+  background: transparent;
+
+  &::placeholder {
+    color: #aaa;
+  }
+}
+
+.search-btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, $banner-from, $banner-to);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.95;
   }
 }
 

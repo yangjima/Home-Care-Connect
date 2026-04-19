@@ -3,6 +3,7 @@ package com.homecare.asset.controller;
 import com.homecare.asset.common.BusinessException;
 import com.homecare.asset.common.Result;
 import com.homecare.asset.common.PageResult;
+import com.homecare.asset.dto.ProcurementMallStatsResponse;
 import com.homecare.asset.dto.ProcurementProductRequest;
 import com.homecare.asset.dto.ProcurementProductResponse;
 import com.homecare.asset.service.ProcurementProductService;
@@ -50,6 +51,14 @@ public class ProcurementProductController {
         requireProcurementManager(httpRequest);
         ProcurementProductResponse response = productService.update(id, request);
         return Result.success("更新成功", response);
+    }
+
+    /**
+     * 本地商城首页统计（已上架商品总数）
+     */
+    @GetMapping("/summary")
+    public Result<ProcurementMallStatsResponse> mallStats() {
+        return Result.success(productService.getMallStats());
     }
 
     /**

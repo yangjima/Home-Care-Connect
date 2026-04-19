@@ -30,11 +30,29 @@ export interface User {
   id: number
   username: string
   nickname?: string
+  realName?: string
+  /** male | female */
+  gender?: string
   email: string
   phone?: string
   avatar?: string
   role: string
+  /** 所属门店（店长/服务人员等） */
+  storeId?: number | null
+  storeName?: string | null
+  /** 账号状态：active / inactive / banned */
+  status?: string
   createTime?: string
+  firstLoginAt?: string
+  lastLoginAt?: string
+}
+
+/** GET /user/users/stats */
+export interface UserStats {
+  total: number
+  serviceStaff: number
+  distributor: number
+  online: number
 }
 
 // 房源相关

@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 /**
- * 通过 SMTP 发送邮箱验证码（如 139 邮箱：smtp.139.com:465 + SSL）
+ * 通过 SMTP 发送邮箱验证码（明文 SMTP，无 SSL/TLS）
  */
 @Slf4j
 @Service
@@ -68,11 +68,6 @@ public class EmailVerificationMailService {
         Properties p = new Properties();
         p.put("mail.transport.protocol", "smtp");
         p.put("mail.smtp.auth", "true");
-        if (mailProperties.isSsl()) {
-            p.put("mail.smtp.ssl.enable", "true");
-        } else {
-            p.put("mail.smtp.starttls.enable", "true");
-        }
         mailSender.setJavaMailProperties(p);
         return mailSender;
     }

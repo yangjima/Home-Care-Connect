@@ -17,9 +17,10 @@
       <el-option v-for="opt in statusOptions" :key="`${opt.value}-${opt.label}`" :label="opt.label" :value="opt.value" />
     </el-select>
     <el-button @click="emit('search')">刷新</el-button>
-    <router-link :to="createPath">
+    <router-link v-if="createPath" :to="createPath">
       <el-button :type="createButtonType">{{ createText }}</el-button>
     </router-link>
+    <el-button v-else :type="createButtonType" @click="emit('create')">{{ createText }}</el-button>
     <slot />
   </div>
 </template>
@@ -33,7 +34,8 @@ const statusModel = defineModel<string>('status', { required: true })
 
 withDefaults(
   defineProps<{
-    createPath: string
+    /** 省略时使用新增按钮并通过 `create` 事件打开弹窗 */
+    createPath?: string
     createText: string
     createButtonType?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
     keywordPlaceholder?: string
@@ -54,6 +56,7 @@ withDefaults(
 
 const emit = defineEmits<{
   search: []
+  create: []
 }>()
 </script>
 

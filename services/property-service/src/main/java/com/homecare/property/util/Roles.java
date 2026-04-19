@@ -16,6 +16,18 @@ public final class Roles {
     private Roles() {
     }
 
+    /** 系统超级管理员，可管理全部门店与数据 */
+    public static boolean isSuperAdmin(String role) {
+        return ADMIN.equals(role);
+    }
+
+    public static boolean isStoreManager(String role) {
+        return STORE_MANAGER.equals(role);
+    }
+
+    /**
+     * 可进入「平台管理端」相关能力（与 user-service 概念一致：超管 + 店长界面）
+     */
     public static boolean isPlatformAdmin(String role) {
         return ADMIN.equals(role) || STORE_MANAGER.equals(role);
     }
@@ -24,7 +36,7 @@ public final class Roles {
         return MERCHANT.equals(role);
     }
 
-    /** 可发布房源（上架房子） */
+    /** 可发布房源 */
     public static boolean canCreateProperty(String role) {
         return isPlatformAdmin(role) || isMerchant(role);
     }

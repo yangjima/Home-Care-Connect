@@ -2,6 +2,7 @@
 
 生成新的一对（覆盖当前文件）可在仓库根目录执行：
   node scripts/generate-login-rsa.mjs
+  会同步：frontend/.env*、application-local.yml、infrastructure/docker/.env（Compose 构建前端与 user-service 容器）、config/login-rsa-*.pem
 
 或手动生成后自行保存为：
   login-rsa-public.pem   → 公钥，给前端 VITE_LOGIN_RSA_PUBLIC_KEY（见 frontend-VITE_LOGIN_RSA_PUBLIC_KEY.txt 一行格式）

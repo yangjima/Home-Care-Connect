@@ -16,8 +16,8 @@ public class RegisterRequest {
     @Size(min = 3, max = 20, message = "用户名长度必须在3-20个字符之间")
     private String username;
 
+    /** RSA 密文，明文长度规则在解密后由服务层校验 */
     @NotBlank(message = "密码不能为空")
-    @Size(min = 6, max = 20, message = "密码长度必须在6-20个字符之间")
     private String password;
 
     @NotBlank(message = "确认密码不能为空")

@@ -3,7 +3,9 @@ package com.homecare.user.controller;
 import com.homecare.user.common.BusinessException;
 import com.homecare.user.common.PageResult;
 import com.homecare.user.common.Result;
+import com.homecare.user.dto.AdminCreateUserRequest;
 import com.homecare.user.dto.UserResponse;
+import com.homecare.user.dto.UserStatsResponse;
 import com.homecare.user.entity.User;
 import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.UserService;
@@ -18,6 +20,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -86,6 +89,28 @@ public class UserController {
     }
 
     /**
+     * 用户管理页统计（全库）
+     */
+    @GetMapping("/stats")
+    public Result<UserStatsResponse> userStats(HttpServletRequest request) {
+        requirePlatformAdmin(request);
+        return Result.success(userService.getUserStats(GatewayHeaders.role(request), GatewayHeaders.storeId(request)));
+    }
+
+    /**
+     * 管理后台创建用户
+     */
+    @PostMapping
+    public Result<UserResponse> createUser(
+            @Valid @RequestBody AdminCreateUserRequest body,
+            HttpServletRequest request) {
+        requirePlatformAdmin(request);
+        String operatorRole = GatewayHeaders.role(request);
+        UserResponse created = userService.createUserByAdmin(body, operatorRole, GatewayHeaders.storeId(request));
+        return Result.success("创建成功", created);
+    }
+
+    /**
      * 分页查询用户列表
      */
     @GetMapping
@@ -96,7 +121,8 @@ public class UserController {
             @RequestParam(value = "keyword", required = false) String keyword,
             HttpServletRequest request) {
         requirePlatformAdmin(request);
-        PageResult<UserResponse> result = userService.listUsers(page, pageSize, role, keyword);
+        PageResult<UserResponse> result = userService.listUsers(
+                page, pageSize, role, keyword, GatewayHeaders.role(request), GatewayHeaders.storeId(request));
         return Result.success(result);
     }
 
@@ -124,6 +150,31 @@ public class UserController {
         requirePlatformAdmin(httpRequest);
         UserResponse updated = userService.updateUserRole(id, request.getRole());
         return Result.success("角色更新成功", updated);
+    }
+
+    /**
+     * 管理后台删除用户（超级管理员 / 店长）
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteUser(@PathVariable("id") Long id, HttpServletRequest request) {
+        requirePlatformAdmin(request);
+        Long operatorId = requireUserId(request);
+        String operatorRole = GatewayHeaders.role(request);
+        userService.deleteUser(id, operatorRole, operatorId, GatewayHeaders.storeId(request));
+        return Result.success("删除成功", null);
+    }
+
+    /**
+     * 超级管理员设置用户所属门店
+     */
+    @PatchMapping("/{id}/store")
+    public Result<UserResponse> updateUserStore(
+            @PathVariable("id") Long id,
+            @RequestBody StoreBindRequest body,
+            HttpServletRequest request) {
+        requireAdminOnly(request);
+        UserResponse updated = userService.updateUserStore(id, body == null ? null : body.getStoreId());
+        return Result.success("已更新门店绑定", updated);
     }
 
     /**
@@ -214,6 +265,11 @@ public class UserController {
         private String role;
     }
 
+    @lombok.Data
+    public static class StoreBindRequest {
+        private Long storeId;
+    }
+
     private Long requireUserId(HttpServletRequest request) {
         Long userId = GatewayHeaders.userId(request);
         if (userId == null) {
@@ -226,6 +282,16 @@ public class UserController {
         String role = GatewayHeaders.role(request);
         if (!Roles.isPlatformAdmin(role)) {
             throw new BusinessException(403, "仅超级管理员或店长可访问");
+        }
+    }
+
+    private void requireAdminOnly(HttpServletRequest request) {
+        String role = GatewayHeaders.role(request);
+        if (!Roles.ADMIN.equals(role)) {
+            throw new BusinessException(403, "仅超级管理员可操作");
+        }
+        if (GatewayHeaders.userId(request) == null) {
+            throw new BusinessException(401, "未登录");
         }
     }
 

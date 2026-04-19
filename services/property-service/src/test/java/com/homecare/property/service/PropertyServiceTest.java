@@ -9,6 +9,7 @@ import com.homecare.property.entity.PropertyImage;
 import com.homecare.property.repository.PropertyImageRepository;
 import com.homecare.property.repository.PropertyRepository;
 import com.homecare.property.repository.PropertyViewingRepository;
+import com.homecare.property.repository.StoreRepository;
 import com.homecare.property.service.impl.PropertyServiceImpl;
 import com.homecare.property.util.Roles;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,6 +53,9 @@ class PropertyServiceTest {
     @Mock
     private PropertyViewingRepository propertyViewingRepository;
 
+    @Mock
+    private StoreRepository storeRepository;
+
     private PropertyServiceImpl propertyService;
 
     private ObjectMapper objectMapper;
@@ -60,7 +64,7 @@ class PropertyServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         propertyService = new PropertyServiceImpl(
-                propertyRepository, propertyImageRepository, propertyViewingRepository, objectMapper
+                propertyRepository, propertyImageRepository, propertyViewingRepository, storeRepository, objectMapper
         );
     }
 
@@ -76,7 +80,7 @@ class PropertyServiceTest {
             when(propertyImageRepository.selectList(any(LambdaQueryWrapper.class)))
                     .thenReturn(Collections.emptyList());
 
-            PropertyResponse response = propertyService.getPropertyById(1L, null, null);
+            PropertyResponse response = propertyService.getPropertyById(1L, null, null, null);
 
             assertNotNull(response);
             assertEquals(1L, response.getId());
@@ -91,7 +95,7 @@ class PropertyServiceTest {
             when(propertyRepository.selectById(1L)).thenReturn(property);
 
             BusinessException exception = assertThrows(BusinessException.class,
-                    () -> propertyService.getPropertyById(1L, null, null));
+                    () -> propertyService.getPropertyById(1L, null, null, null));
 
             assertEquals(404, exception.getCode());
         }
@@ -102,7 +106,7 @@ class PropertyServiceTest {
             when(propertyRepository.selectById(999L)).thenReturn(null);
 
             BusinessException exception = assertThrows(BusinessException.class,
-                    () -> propertyService.getPropertyById(999L, null, null));
+                    () -> propertyService.getPropertyById(999L, null, null, null));
 
             assertEquals(404, exception.getCode());
             assertEquals("房产不存在", exception.getMessage());

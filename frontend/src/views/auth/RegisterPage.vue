@@ -156,7 +156,11 @@ async function sendCaptcha() {
     return
   }
 
-  await apiSendCaptcha(form.email)
+  try {
+    await apiSendCaptcha(form.email.trim())
+  } catch {
+    return
+  }
   ElMessage.success('验证码已发送')
 
   captchaCooldown.value = 60
@@ -169,16 +173,28 @@ async function sendCaptcha() {
 }
 
 async function handleRegister() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  const elForm = formRef.value
+  if (!elForm) {
+    ElMessage.error('表单未就绪，请刷新页面后重试')
+    return
+  }
+
+  form.email = form.email.trim()
+  form.captcha = form.captcha.trim()
+
+  try {
+    await elForm.validate()
+  } catch {
+    return
+  }
 
   loading.value = true
   try {
     await authStore.register(form.email, form.captcha, form.password, form.confirmPassword)
     ElMessage.success('注册成功，欢迎加入居服通！')
     router.push('/home')
-  } catch (e) {
-    ElMessage.error('注册失败，请稍后重试')
+  } catch {
+    // 密码加密失败：authStore 已提示；接口错误：axios 拦截器已提示
   } finally {
     loading.value = false
   }

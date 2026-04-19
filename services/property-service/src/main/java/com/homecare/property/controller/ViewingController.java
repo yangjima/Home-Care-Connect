@@ -41,7 +41,8 @@ public class ViewingController {
     public Result<ViewingResponse> getViewingById(@PathVariable Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        ViewingResponse response = propertyService.getViewingById(id, userId, role);
+        ViewingResponse response = propertyService.getViewingById(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success(response);
     }
 
@@ -52,7 +53,8 @@ public class ViewingController {
     public Result<ViewingResponse> confirmViewing(@PathVariable Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        ViewingResponse response = propertyService.confirmViewing(id, userId, role);
+        ViewingResponse response = propertyService.confirmViewing(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("确认成功", response);
     }
 
@@ -63,7 +65,8 @@ public class ViewingController {
     public Result<ViewingResponse> cancelViewing(@PathVariable Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        ViewingResponse response = propertyService.cancelViewing(id, userId, role);
+        ViewingResponse response = propertyService.cancelViewing(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("取消成功", response);
     }
 
@@ -74,7 +77,8 @@ public class ViewingController {
     public Result<ViewingResponse> completeViewing(@PathVariable Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        ViewingResponse response = propertyService.completeViewing(id, userId, role);
+        ViewingResponse response = propertyService.completeViewing(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("已完成", response);
     }
 
@@ -92,7 +96,7 @@ public class ViewingController {
         Long operatorUserId = requireUserId(httpRequest);
         String operatorRole = GatewayHeaders.role(httpRequest);
         var result = propertyService.listViewings(page, pageSize, propertyId, userId, status,
-                operatorUserId, operatorRole);
+                operatorUserId, operatorRole, GatewayHeaders.storeId(httpRequest));
         return Result.success(result);
     }
 

@@ -56,7 +56,8 @@ public class PropertyController {
             HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.createProperty(request, userId, role);
+        PropertyResponse response = propertyService.createProperty(
+                request, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("创建成功", response);
     }
 
@@ -66,7 +67,10 @@ public class PropertyController {
     @GetMapping("/{id}")
     public Result<PropertyResponse> getPropertyById(@PathVariable("id") Long id, HttpServletRequest httpRequest) {
         PropertyResponse response = propertyService.getPropertyById(
-                id, GatewayHeaders.userId(httpRequest), GatewayHeaders.role(httpRequest));
+                id,
+                GatewayHeaders.userId(httpRequest),
+                GatewayHeaders.role(httpRequest),
+                GatewayHeaders.storeId(httpRequest));
         return Result.success(response);
     }
 
@@ -80,7 +84,8 @@ public class PropertyController {
             HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.updateProperty(id, request, userId, role);
+        PropertyResponse response = propertyService.updateProperty(
+                id, request, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("更新成功", response);
     }
 
@@ -93,7 +98,7 @@ public class PropertyController {
             HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        propertyService.deleteProperty(id, userId, role);
+        propertyService.deleteProperty(id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("删除成功", null);
     }
 
@@ -114,7 +119,8 @@ public class PropertyController {
             @RequestParam(value = "status", required = false) String legacyStatus,
             @RequestParam(value = "facilities", required = false) String facilities,
             @RequestParam(value = "sort", defaultValue = "comprehensive") String sort,
-            @RequestParam(value = "ownerId", required = false) Long ownerId) {
+            @RequestParam(value = "ownerId", required = false) Long ownerId,
+            HttpServletRequest httpRequest) {
 
         List<String> statusList = splitComma(statuses);
         if (statusList.isEmpty() && StringUtils.hasText(legacyStatus)) {
@@ -123,7 +129,8 @@ public class PropertyController {
 
         var result = propertyService.listProperties(page, pageSize, keyword,
                 propertyType, district, minPrice, maxPrice,
-                splitComma(types), statusList, ownerId, sort, splitComma(facilities));
+                splitComma(types), statusList, ownerId, sort, splitComma(facilities),
+                GatewayHeaders.role(httpRequest), GatewayHeaders.storeId(httpRequest));
         return Result.success(result);
     }
 
@@ -134,8 +141,11 @@ public class PropertyController {
     public Result<PropertyResponse> publishProperty(@PathVariable("id") Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.publishProperty(id, userId, role);
-        String msg = Roles.isPlatformAdmin(role) ? "上架成功" : "已提交上架审核，请等待店长或超级管理员审批";
+        PropertyResponse response = propertyService.publishProperty(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
+        String msg = (Roles.isSuperAdmin(role) || Roles.isStoreManager(role))
+                ? "上架成功"
+                : "已提交上架审核，请等待店长或超级管理员审批";
         return Result.success(msg, response);
     }
 
@@ -146,7 +156,8 @@ public class PropertyController {
     public Result<PropertyResponse> approveListing(@PathVariable("id") Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.approvePropertyListing(id, userId, role);
+        PropertyResponse response = propertyService.approvePropertyListing(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("已通过上架审核", response);
     }
 
@@ -157,7 +168,8 @@ public class PropertyController {
     public Result<PropertyResponse> rejectListing(@PathVariable("id") Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.rejectPropertyListing(id, userId, role);
+        PropertyResponse response = propertyService.rejectPropertyListing(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("已驳回上架申请", response);
     }
 
@@ -168,7 +180,8 @@ public class PropertyController {
     public Result<PropertyResponse> offlineProperty(@PathVariable("id") Long id, HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.offlineProperty(id, userId, role);
+        PropertyResponse response = propertyService.offlineProperty(
+                id, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("下架成功", response);
     }
 
@@ -182,7 +195,8 @@ public class PropertyController {
             HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.recommendProperty(id, recommended, userId, role);
+        PropertyResponse response = propertyService.recommendProperty(
+                id, recommended, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success(recommended ? "推荐成功" : "取消推荐成功", response);
     }
 
@@ -196,7 +210,8 @@ public class PropertyController {
             HttpServletRequest httpRequest) {
         Long userId = requireUserId(httpRequest);
         String role = GatewayHeaders.role(httpRequest);
-        PropertyResponse response = propertyService.uploadImages(id, imageUrls, userId, role);
+        PropertyResponse response = propertyService.uploadImages(
+                id, imageUrls, userId, role, GatewayHeaders.storeId(httpRequest));
         return Result.success("上传成功", response);
     }
 

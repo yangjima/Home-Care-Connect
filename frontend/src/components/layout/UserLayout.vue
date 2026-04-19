@@ -41,6 +41,18 @@ const canListProperty = computed(() => {
   width: 100%;
   margin: 0 auto;
   padding: var(--spacing-lg);
+  padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+  padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+  padding-bottom: max(var(--spacing-lg), env(safe-area-inset-bottom));
+}
+
+@media (max-width: 768px) {
+  .user-container {
+    padding: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+    padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+  }
 }
 
 .user-main {

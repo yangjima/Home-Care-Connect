@@ -76,6 +76,8 @@ export function createProperty(data: {
   videos?: string[]
   /** 必须在 images 列表中，用于列表/卡片展示 */
   coverImage?: string
+  /** 超级管理员指定房源所属门店 */
+  storeId?: number
 }) {
   return post<object>('/property/properties', data)
 }
@@ -94,6 +96,7 @@ export function updateProperty(id: number, data: {
   images?: string[]
   videos?: string[]
   coverImage?: string
+  storeId?: number
 }) {
   return put<object>(`/property/properties/${id}`, data)
 }

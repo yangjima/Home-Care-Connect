@@ -2,6 +2,7 @@ package com.homecare.asset.service;
 
 import com.homecare.asset.common.BusinessException;
 import com.homecare.asset.common.PageResult;
+import com.homecare.asset.dto.ProcurementMallStatsResponse;
 import com.homecare.asset.dto.ProcurementProductRequest;
 import com.homecare.asset.dto.ProcurementProductResponse;
 import com.homecare.asset.entity.ProcurementProduct;
@@ -67,6 +68,16 @@ class ProcurementProductServiceTest {
 
             assertEquals(404, exception.getCode());
             assertEquals("商品不存在", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("商城统计返回已上架数量")
+        void getMallStats_returnsOnShelfTotal() {
+            when(productRepository.selectCount(any())).thenReturn(7L);
+
+            ProcurementMallStatsResponse stats = productService.getMallStats();
+
+            assertEquals(7L, stats.getTotalOnShelf());
         }
     }
 

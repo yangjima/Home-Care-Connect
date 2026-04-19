@@ -104,7 +104,7 @@ public class AuthController {
     }
 
     /**
-     * 验证验证码（预留接口）
+     * 验证验证码
      */
     @PostMapping("/verify-code")
     public Result<Boolean> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {

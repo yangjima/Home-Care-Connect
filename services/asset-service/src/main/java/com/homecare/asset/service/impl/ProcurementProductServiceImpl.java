@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.homecare.asset.common.BusinessException;
 import com.homecare.asset.common.PageResult;
+import com.homecare.asset.dto.ProcurementMallStatsResponse;
 import com.homecare.asset.dto.ProcurementProductRequest;
 import com.homecare.asset.dto.ProcurementProductResponse;
 import com.homecare.asset.entity.ProcurementProduct;
@@ -178,6 +179,15 @@ public class ProcurementProductServiceImpl implements ProcurementProductService 
                 (int) pageResult.getSize(),
                 pageResult.getRecords().stream().map(this::toResponse).collect(Collectors.toList())
         );
+    }
+
+    @Override
+    public ProcurementMallStatsResponse getMallStats() {
+        LambdaQueryWrapper<ProcurementProduct> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProcurementProduct::getStatus, "1");
+        Long n = productRepository.selectCount(wrapper);
+        long total = n == null ? 0L : n.longValue();
+        return new ProcurementMallStatsResponse(total);
     }
 
     private void applySort(LambdaQueryWrapper<ProcurementProduct> wrapper, String sort) {

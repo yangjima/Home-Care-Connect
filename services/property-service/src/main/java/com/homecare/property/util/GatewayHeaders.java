@@ -10,6 +10,7 @@ public final class GatewayHeaders {
 
     public static final String USER_ID = "X-User-Id";
     public static final String USER_ROLE = "X-User-Role";
+    public static final String USER_STORE_ID = "X-User-Store-Id";
 
     private GatewayHeaders() {
     }
@@ -40,5 +41,17 @@ public final class GatewayHeaders {
     public static String role(HttpServletRequest request) {
         String r = request.getHeader(USER_ROLE);
         return StringUtils.hasText(r) ? r.trim() : "";
+    }
+
+    public static Long storeId(HttpServletRequest request) {
+        String raw = request.getHeader(USER_STORE_ID);
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

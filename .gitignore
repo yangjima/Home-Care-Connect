@@ -17,6 +17,8 @@ services/ai-service/**/*.pyc
 # 前端
 frontend/node_modules/
 frontend/dist/
+# 工具误生成的 Vue 旁路声明（全局类型见 frontend/env.d.ts）
+frontend/src/**/*.vue.d.ts
 frontend/.DS_Store
 frontend/.env.local
 frontend/.env.production
@@ -66,3 +68,10 @@ minio-data/
 # 敏感文件
 infrastructure/docker/.env
 credentials.json
+
+# 本地生成的登录 RSA 密钥（config/README-login-rsa.txt 可提交，密钥文件勿提交）
+config/login-rsa-*.pem
+config/frontend-VITE_LOGIN_RSA_PUBLIC_KEY.txt
+
+# 用户服务：本机 Spring 配置（可含邮箱授权码等，勿提交）
+services/user-service/src/main/resources/application-local.yml

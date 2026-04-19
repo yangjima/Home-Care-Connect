@@ -36,7 +36,7 @@
           </div>
           <div class="stat-value">{{ formatNum(stats.userCount) }}</div>
           <div class="stat-label">用户（本页样本）</div>
-          <div class="stat-sub">员工列表第 1 页</div>
+          <div class="stat-sub">用户列表第 1 页</div>
         </div>
       </div>
 
@@ -114,7 +114,7 @@
               <span class="quick-action-icon">🛠️</span><span>配置服务</span>
             </router-link>
             <router-link to="/admin/staff" class="quick-action">
-              <span class="quick-action-icon">👥</span><span>管理员工</span>
+              <span class="quick-action-icon">👥</span><span>管理用户</span>
             </router-link>
             <a href="#" class="quick-action" @click.prevent><span class="quick-action-icon">💰</span><span>发放佣金</span></a>
             <a href="#" class="quick-action" @click.prevent><span class="quick-action-icon">📊</span><span>查看报表</span></a>
@@ -228,6 +228,22 @@ onMounted(async () => {
 @media (max-width: 1200px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .content {
+    padding: 12px;
+  }
+  .stats-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    padding: 16px;
+  }
+  .stat-value {
+    font-size: 24px;
   }
 }
 .stat-card {

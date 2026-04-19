@@ -18,14 +18,14 @@ public class AppMailProperties {
     private boolean enabled = false;
 
     /**
-     * SMTP 主机，139 邮箱为 smtp.139.com
+     * SMTP 主机
      */
-    private String host = "smtp.139.com";
+    private String host = "";
 
     /**
-     * SMTP 端口，SSL 常用 465
+     * SMTP 端口（明文 SMTP 常用 25）
      */
-    private int port = 465;
+    private int port = 25;
 
     /**
      * SMTP 登录账号（一般为完整邮箱）
@@ -39,14 +39,9 @@ public class AppMailProperties {
     private String password = "";
 
     /**
-     * 发件人：可为纯邮箱，或「显示名 + 空格 + 尖括号邮箱」（如 居服通官方账号 与 15194479717@139.com 组合），未配置时默认使用 username
+     * 发件人：可为纯邮箱，或「显示名 + 空格 + 尖括号邮箱」（如 居服通官方账号 与 admin@jumeitong.top 组合），未配置时默认使用 username
      */
     private String from = "";
-
-    /**
-     * 是否使用 SSL（465 通常为 true）
-     */
-    private boolean ssl = true;
 
     public String resolveFromAddress() {
         if (from != null && !from.isBlank()) {

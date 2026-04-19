@@ -11,6 +11,7 @@ import com.homecare.user.repository.UserRepository;
 import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.AuthService;
 import com.homecare.user.service.UserService;
+import com.homecare.user.service.mail.EmailVerificationMailService;
 import com.homecare.user.util.Roles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate redisTemplate;
     private final RsaPasswordDecryptor rsaPasswordDecryptor;
+    private final EmailVerificationMailService emailVerificationMailService;
 
     @Value("${jwt.access-token-expiration:86400000}")
     private long accessTokenExpiration;
@@ -69,11 +71,16 @@ public class AuthServiceImpl implements AuthService {
             redisTemplate.delete(CAPTCHA_PREFIX + request.getCaptchaId());
         }
 
-        // 查询用户
+        // 查询用户：支持用户名或邮箱登录（与邮箱注册「邮箱即账号」、后台「独立用户名」均兼容）
+        String loginId = request.getUsername() == null ? "" : request.getUsername().trim();
         User user = userRepository.selectOne(
                 new LambdaQueryWrapper<User>()
-                        .eq(User::getUsername, request.getUsername())
-        );
+                        .eq(User::getUsername, loginId));
+        if (user == null && EMAIL_PATTERN.matcher(loginId).matches()) {
+            user = userRepository.selectOne(
+                    new LambdaQueryWrapper<User>()
+                            .apply("LOWER(email) = LOWER({0})", loginId));
+        }
 
         if (user == null) {
             throw new BusinessException(401, "用户名或密码错误");
@@ -93,8 +100,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(403, "账号已被封禁");
         }
 
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (user.getFirstLoginAt() == null) {
+            user.setFirstLoginAt(now);
+        }
+        user.setLastLoginAt(now);
+        userRepository.updateById(user);
+
         // 生成令牌
-        String accessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        String accessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole(), user.getStoreId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername());
 
         // 将 refreshToken 存入 Redis
@@ -118,6 +132,7 @@ public class AuthServiceImpl implements AuthService {
         if (rawPassword == null || !rawPassword.equals(rawConfirmPassword)) {
             throw new BusinessException(400, "两次密码输入不一致");
         }
+        assertPlainRegisterPasswordLength(rawPassword);
 
         // 图形验证码校验
         if (StringUtils.hasText(request.getCaptchaId()) && StringUtils.hasText(request.getCaptcha())) {
@@ -181,11 +196,36 @@ public class AuthServiceImpl implements AuthService {
         String code = generateNumericCode(6);
         String codeKey = VERIFY_CODE_PREFIX + normalizedType + ":" + normalizedTarget;
 
+        if ("email".equals(normalizedType)) {
+            emailVerificationMailService.sendVerificationCode(normalizedTarget, code);
+        } else {
+            // 短信通道待对接：勿在日志中输出明文验证码
+            log.debug("短信验证码已生成（待对接短信网关）type=sms target={} ttl={}s", normalizedTarget, VERIFY_CODE_TTL_SECONDS);
+        }
+
         redisTemplate.opsForValue().set(codeKey, code, VERIFY_CODE_TTL_SECONDS, TimeUnit.SECONDS);
         redisTemplate.opsForValue().set(cooldownKey, "1", VERIFY_CODE_COOLDOWN_SECONDS, TimeUnit.SECONDS);
 
-        // MVP：先把验证码打印日志，后续对接短信/邮件服务
-        log.info("发送验证码成功 type={} target={} code={} ttl={}s", normalizedType, normalizedTarget, code, VERIFY_CODE_TTL_SECONDS);
+        log.info("验证码已派发 type={} target={} ttl={}s", normalizedType, logTarget(normalizedType, normalizedTarget), VERIFY_CODE_TTL_SECONDS);
+    }
+
+    private static String logTarget(String type, String target) {
+        if (!StringUtils.hasText(target)) {
+            return "";
+        }
+        if ("email".equals(type) && target.contains("@")) {
+            int at = target.indexOf('@');
+            String local = target.substring(0, at);
+            String domain = target.substring(at);
+            if (local.length() <= 2) {
+                return "*" + domain;
+            }
+            return local.charAt(0) + "***" + local.charAt(local.length() - 1) + domain;
+        }
+        if ("sms".equals(type) && target.length() >= 7) {
+            return target.substring(0, 3) + "****" + target.substring(target.length() - 4);
+        }
+        return target;
     }
 
     @Override
@@ -217,6 +257,7 @@ public class AuthServiceImpl implements AuthService {
         if (!StringUtils.hasText(rawPassword) || !rawPassword.equals(rawConfirmPassword)) {
             throw new BusinessException(400, "两次密码输入不一致");
         }
+        assertPlainRegisterPasswordLength(rawPassword);
 
         String email = request.getEmail() == null ? null : request.getEmail().trim();
         boolean ok = verifyCode("email", email, request.getCode());
@@ -275,7 +316,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 生成新令牌
-        String newAccessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        String newAccessToken = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole(), user.getStoreId());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername());
 
         // 更新 Redis 中的 refreshToken
@@ -298,6 +339,12 @@ public class AuthServiceImpl implements AuthService {
     public UserResponse getCurrentUser(String token) {
         String username = jwtUtil.getUsernameFromToken(token);
         return userService.getUserByUsername(username);
+    }
+
+    private void assertPlainRegisterPasswordLength(String rawPassword) {
+        if (rawPassword.length() < 6 || rawPassword.length() > 20) {
+            throw new BusinessException(400, "密码长度必须在6-20个字符之间");
+        }
     }
 
     /**

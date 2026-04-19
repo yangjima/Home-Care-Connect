@@ -11,6 +11,11 @@ export function getProcurementList(params: PageParams & { category?: string; sor
   return get<PageResult<object>>('/asset/procurement-products', { page, pageSize: size, ...rest })
 }
 
+/** GET /asset/procurement-products/summary — 已上架商品总数（首页统计用） */
+export function getProcurementSummary() {
+  return get<{ totalOnShelf: number }>('/asset/procurement-products/summary')
+}
+
 export function getProcurementDetail(id: number) {
   return get<object>(`/asset/procurement-products/${id}`)
 }

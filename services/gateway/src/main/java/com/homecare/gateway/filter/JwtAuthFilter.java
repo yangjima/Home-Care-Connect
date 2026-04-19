@@ -95,12 +95,19 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             }
             String username = claims.get("username", String.class);
             String role = claims.get("role", String.class);
+            Object storeIdClaim = claims.get("storeId");
 
-            ServerHttpRequest mutatedRequest = request.mutate()
+            var builder = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-Username", username != null ? username : "")
-                    .header("X-User-Role", role != null ? role : "")
-                    .build();
+                    .header("X-User-Role", role != null ? role : "");
+            if (storeIdClaim != null) {
+                String storeId = String.valueOf(storeIdClaim);
+                if (storeId != null && !storeId.isBlank() && !"null".equals(storeId)) {
+                    builder.header("X-User-Store-Id", storeId);
+                }
+            }
+            ServerHttpRequest mutatedRequest = builder.build();
             return Optional.of(mutatedRequest);
         } catch (Exception e) {
             log.warn("JWT 验证失败: {}", e.getMessage());
@@ -155,6 +162,9 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             return false;
         }
         if (path.equals("/api/asset/procurement-products")) {
+            return true;
+        }
+        if ("/api/asset/procurement-products/summary".equals(path)) {
             return true;
         }
         String rest = path.substring("/api/asset/procurement-products/".length());

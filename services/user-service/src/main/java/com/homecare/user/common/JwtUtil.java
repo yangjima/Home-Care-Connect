@@ -44,13 +44,23 @@ public class JwtUtil {
     }
 
     /**
-     * 生成 Token
+     * 生成 Token（不含门店）
      */
     public String generateToken(Long userId, String username, String role) {
+        return generateToken(userId, username, role, null);
+    }
+
+    /**
+     * 生成 Token；店长/服务人员等可在 JWT 中带所属门店 ID，供下游服务做数据隔离。
+     */
+    public String generateToken(Long userId, String username, String role, Long storeId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
         claims.put("role", role);
+        if (storeId != null) {
+            claims.put("storeId", storeId);
+        }
         return createToken(claims, username);
     }
 
@@ -169,7 +179,7 @@ public class JwtUtil {
         Long userId = claims.get("userId", Long.class);
         String username = claims.getSubject();
 
-        // 生成新的访问令牌
-        return generateToken(userId, username, null);
+        // 生成新的访问令牌（不含门店；调用方应改用 AuthServiceImpl.refreshToken 从库加载用户）
+        return generateToken(userId, username, null, null);
     }
 }

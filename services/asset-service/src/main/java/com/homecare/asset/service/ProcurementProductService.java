@@ -1,5 +1,6 @@
 package com.homecare.asset.service;
 
+import com.homecare.asset.dto.ProcurementMallStatsResponse;
 import com.homecare.asset.dto.ProcurementProductRequest;
 import com.homecare.asset.dto.ProcurementProductResponse;
 import com.homecare.asset.common.PageResult;
@@ -30,6 +31,11 @@ public interface ProcurementProductService {
      */
     PageResult<ProcurementProductResponse> list(int page, int pageSize, String keyword,
             String category, String status, String sort, Long viewerUserId, String viewerRole);
+
+    /**
+     * 首页/商城：已上架商品总数（与公开列表可见范围一致，不依赖分页 total）
+     */
+    ProcurementMallStatsResponse getMallStats();
 
     /**
      * 平台管理员通过采购商品上架审核

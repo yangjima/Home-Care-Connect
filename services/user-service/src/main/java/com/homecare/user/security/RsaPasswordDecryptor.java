@@ -4,6 +4,7 @@ import com.homecare.user.common.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.OAEPParameterSpec;
@@ -23,6 +24,7 @@ import java.util.Base64;
  * Note: This only obfuscates password in transit at the application layer.
  * Use HTTPS/TLS for real transport security.
  */
+@Slf4j
 @Component
 public class RsaPasswordDecryptor {
 
@@ -69,7 +71,9 @@ public class RsaPasswordDecryptor {
         } catch (IllegalArgumentException e) {
             throw new BusinessException(400, "密码加密格式错误");
         } catch (Exception e) {
-            throw new BusinessException(400, "密码解密失败");
+            log.warn("RSA-OAEP 解密失败（多为前端公钥与后端私钥不是同一对，或密文损坏）: {}", e.getMessage());
+            throw new BusinessException(400,
+                    "密码解密失败，请确认前端构建时的 VITE_LOGIN_RSA_PUBLIC_KEY 与服务端 app.security.login-rsa.private-key 为同一密钥对");
         }
     }
 

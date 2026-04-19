@@ -6,7 +6,7 @@ import com.homecare.user.common.PasswordEncoder;
 import com.homecare.user.dto.*;
 import com.homecare.user.entity.User;
 import com.homecare.user.repository.UserRepository;
-import com.homecare.user.service.impl.AuthServiceImpl;
+import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +36,9 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
+    private RsaPasswordDecryptor rsaPasswordDecryptor;
+
+    @Mock
     private StringRedisTemplate redisTemplate;
 
     @Mock
@@ -45,7 +48,8 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(userRepository, passwordEncoder);
+        userService = new UserServiceImpl(userRepository, passwordEncoder, rsaPasswordDecryptor);
+        ReflectionTestUtils.setField(userService, "onlineWithinMinutes", 15);
     }
 
     @Nested
@@ -241,7 +245,6 @@ class UserServiceTest {
         user.setEmail(username + "@example.com");
         user.setRole("tenant");
         user.setStatus("active");
-        user.setDeleted(0);
         return user;
     }
 }

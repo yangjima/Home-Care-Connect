@@ -4,10 +4,10 @@
     <p class="subtitle">登录居服通，开启智慧社区生活</p>
 
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="login-form">
-      <el-form-item label="邮箱" prop="email">
+      <el-form-item label="用户名或邮箱" prop="account">
         <el-input
-          v-model="form.email"
-          placeholder="请输入邮箱"
+          v-model="form.account"
+          placeholder="注册邮箱，或后台创建账号的用户名"
           size="large"
           :prefix-icon="Message"
         />
@@ -65,16 +65,32 @@ const formRef = ref()
 const loading = ref(false)
 
 const form = reactive({
-  email: '',
+  account: '',
   password: '',
   remember: false,
 })
 
+function validateAccount(_rule: unknown, value: string, callback: (e?: Error) => void) {
+  const v = (value || '').trim()
+  if (!v) {
+    callback(new Error('请输入用户名或邮箱'))
+    return
+  }
+  if (v.includes('@')) {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+    if (!emailOk) {
+      callback(new Error('请输入有效的邮箱地址'))
+      return
+    }
+  } else if (v.length < 2) {
+    callback(new Error('用户名至少 2 个字符'))
+    return
+  }
+  callback()
+}
+
 const rules = {
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
-  ],
+  account: [{ required: true, validator: validateAccount, trigger: 'blur' }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码至少 6 个字符', trigger: 'blur' },
@@ -87,13 +103,13 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    await authStore.login(form.email, form.password)
+    await authStore.login(form.account.trim(), form.password)
     ElMessage.success('登录成功')
 
     const redirect = route.query.redirect as string || '/home'
     router.push(redirect)
   } catch (e) {
-    ElMessage.error('登录失败，请检查邮箱和密码')
+    ElMessage.error('登录失败，请检查账号和密码')
   } finally {
     loading.value = false
   }

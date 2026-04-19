@@ -57,156 +57,30 @@
       />
     </div>
 
-    <!-- 发布房源对话框 -->
-    <el-dialog v-model="showPublishDialog" title="发布房源" width="640px" destroy-on-close>
-        <el-form :model="publishForm" label-width="100px">
-        <el-form-item label="房源标题" required>
-          <el-input v-model="publishForm.title" placeholder="如：精装两居室出租" maxlength="50" show-word-limit />
-        </el-form-item>
-        <el-form-item label="房屋类型" required>
-          <el-select v-model="publishForm.type" placeholder="请选择" style="width: 100%">
-            <el-option label="普通住宅" value="普通住宅" />
-            <el-option label="公寓" value="公寓" />
-            <el-option label="洋房" value="洋房" />
-            <el-option label="别墅" value="别墅" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="租金(元/月)" required>
-          <el-input-number v-model="publishForm.price" :min="0" :precision="0" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="面积(㎡)" required>
-          <el-input-number v-model="publishForm.area" :min="0" :precision="0" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="户型" required>
-          <div class="room-inputs">
-            <el-input-number v-model="publishForm.rooms" :min="0" placeholder="室" /> 室
-            <el-input-number v-model="publishForm.livingRooms" :min="0" placeholder="厅" /> 厅
-            <el-input-number v-model="publishForm.bathrooms" :min="0" placeholder="卫" /> 卫
-          </div>
-        </el-form-item>
-        <el-form-item label="楼层" required>
-          <el-input-number v-model="publishForm.floor" :min="1" :max="publishForm.totalFloors" /> /
-          <el-input-number v-model="publishForm.totalFloors" :min="1" />
-        </el-form-item>
-        <el-form-item label="装修情况">
-          <el-select v-model="publishForm.decoration" style="width: 100%">
-            <el-option label="毛坯" value="毛坯" />
-            <el-option label="简装" value="简装" />
-            <el-option label="精装" value="精装" />
-            <el-option label="豪华装修" value="豪华装修" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="地址" required>
-          <el-input v-model="publishForm.address" placeholder="请输入详细地址" />
-        </el-form-item>
-        <el-form-item label="详细描述">
-          <el-input v-model="publishForm.description" type="textarea" :rows="3" placeholder="描述房屋的详细信息..." />
-        </el-form-item>
-        <el-form-item label="房源图片">
-          <div class="media-upload-section">
-            <div class="media-upload-controls">
-              <el-upload
-                class="media-uploader"
-                :show-file-list="false"
-                accept="image/*"
-                multiple
-                :disabled="publishForm.images.length >= MAX_PROPERTY_IMAGES"
-                :http-request="handleImageUploadRequest"
-              >
-                <el-button type="primary" plain :loading="imageUploading">选择图片上传</el-button>
-              </el-upload>
-            </div>
-            <p class="upload-hint">
-              单张不超过 {{ MAX_IMAGE_MB }}MB，最多 {{ MAX_PROPERTY_IMAGES }} 张；上传后可点「封面」指定列表展示图
-            </p>
-            <div v-if="publishForm.images.length" class="media-preview">
-              <div
-                v-for="url in publishForm.images"
-                :key="url"
-                class="preview-item"
-                :class="{ 'is-cover': url === publishForm.coverImage }"
-              >
-                <img :src="url" alt="房源图片" />
-                <button type="button" class="remove-btn" @click="removeMedia(url, 'image')">×</button>
-                <div class="preview-actions">
-                  <el-button
-                    v-if="publishForm.coverImage !== url"
-                    size="small"
-                    type="primary"
-                    text
-                    @click="publishForm.coverImage = url"
-                  >
-                    设为封面
-                  </el-button>
-                  <el-tag v-else size="small" type="success" effect="dark">封面</el-tag>
-                </div>
-              </div>
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item label="房源视频">
-          <div class="media-upload-section">
-            <div class="media-upload-controls">
-              <el-upload
-                class="media-uploader"
-                :show-file-list="false"
-                accept="video/mp4,video/webm,video/quicktime"
-                multiple
-                :disabled="publishForm.videos.length >= MAX_PROPERTY_VIDEOS"
-                :http-request="handleVideoUploadRequest"
-              >
-                <el-button type="primary" plain :loading="videoUploading">选择视频上传</el-button>
-              </el-upload>
-            </div>
-            <p class="upload-hint">
-              单文件不超过 {{ MAX_VIDEO_MB }}MB，最多 {{ MAX_PROPERTY_VIDEOS }} 个；服务端会轻度压缩后再存储
-            </p>
-            <div v-if="publishForm.videos.length" class="media-preview">
-              <div v-for="url in publishForm.videos" :key="url" class="preview-item preview-item-video">
-                <video :src="url" controls preload="metadata" />
-                <button type="button" class="remove-btn" @click="removeMedia(url, 'video')">×</button>
-              </div>
-            </div>
-          </div>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showPublishDialog = false">取消</el-button>
-        <el-button type="primary" :loading="publishing" @click="handlePublish">
-          {{ editingId ? '保存修改' : '发布' }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <PropertyFormDialog
+      v-model:visible="showPublishDialog"
+      :property-id="editingId"
+      @saved="onPropertyFormSaved"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { UploadRequestOptions } from 'element-plus'
 import UserSubpageHeader from '@/components/user/UserSubpageHeader.vue'
+import PropertyFormDialog from '@/components/property/PropertyFormDialog.vue'
 import type { Property } from '@/types'
 import {
-  createProperty,
   deletePropertyById,
   getMyProperties,
   publishProperty,
-  updateProperty,
-  uploadPropertyMedia,
 } from '@/api/property'
 import { useAuthStore } from '@/stores/auth'
-import { isPlatformAdmin } from '@/constants/roles'
-
-/** 与 property-service 上传/保存校验保持一致 */
-const MAX_IMAGE_MB = 20
-const MAX_VIDEO_MB = 200
-const MAX_PROPERTY_IMAGES = 20
-const MAX_PROPERTY_VIDEOS = 3
 
 const loading = ref(false)
-const publishing = ref(false)
 const properties = ref<Property[]>([])
 const page = ref(1)
 const pageSize = ref(10)
@@ -216,26 +90,6 @@ const showPublishDialog = ref(false)
 const editingId = ref<number | null>(null)
 const authStore = useAuthStore()
 const router = useRouter()
-const imageUploading = ref(false)
-const videoUploading = ref(false)
-
-const publishForm = reactive({
-  title: '',
-  type: '',
-  price: 0,
-  area: 0,
-  rooms: 0,
-  livingRooms: 0,
-  bathrooms: 0,
-  floor: 1,
-  totalFloors: 1,
-  decoration: '精装',
-  address: '',
-  description: '',
-  images: [] as string[],
-  videos: [] as string[],
-  coverImage: '' as string,
-})
 
 const statusMap: Record<string, string> = {
   pending: '待审核',
@@ -310,79 +164,6 @@ function normalizeProperty(item: any): Property {
   }
 }
 
-function validateMediaFile(file: File, mediaType: 'image' | 'video'): boolean {
-  const maxMb = mediaType === 'video' ? MAX_VIDEO_MB : MAX_IMAGE_MB
-  if (file.size > maxMb * 1024 * 1024) {
-    ElMessage.warning(`${mediaType === 'video' ? '视频' : '图片'}大小不能超过 ${maxMb}MB`)
-    return false
-  }
-  return true
-}
-
-async function handleImageUploadRequest(options: UploadRequestOptions) {
-  const file = options.file as File
-  if (publishForm.images.length >= MAX_PROPERTY_IMAGES) {
-    ElMessage.warning(`最多上传 ${MAX_PROPERTY_IMAGES} 张图片`)
-    options.onError?.(new Error('limit'))
-    return
-  }
-  if (!validateMediaFile(file, 'image')) {
-    options.onError?.(new Error('invalid size'))
-    return
-  }
-  imageUploading.value = true
-  try {
-    const uploaded = await uploadPropertyMedia(file)
-    publishForm.images.push(uploaded.url)
-    if (!publishForm.coverImage) {
-      publishForm.coverImage = uploaded.url
-    }
-    ElMessage.success('图片上传成功')
-    options.onSuccess?.(uploaded)
-  } catch (e) {
-    ElMessage.error('图片上传失败，请检查登录状态与网络')
-    options.onError?.(e as Error)
-  } finally {
-    imageUploading.value = false
-  }
-}
-
-async function handleVideoUploadRequest(options: UploadRequestOptions) {
-  const file = options.file as File
-  if (publishForm.videos.length >= MAX_PROPERTY_VIDEOS) {
-    ElMessage.warning(`最多上传 ${MAX_PROPERTY_VIDEOS} 个视频`)
-    options.onError?.(new Error('limit'))
-    return
-  }
-  if (!validateMediaFile(file, 'video')) {
-    options.onError?.(new Error('invalid size'))
-    return
-  }
-  videoUploading.value = true
-  try {
-    const uploaded = await uploadPropertyMedia(file)
-    publishForm.videos.push(uploaded.url)
-    ElMessage.success('视频上传成功')
-    options.onSuccess?.(uploaded)
-  } catch (e) {
-    ElMessage.error('视频上传失败，请检查登录状态与网络')
-    options.onError?.(e as Error)
-  } finally {
-    videoUploading.value = false
-  }
-}
-
-function removeMedia(url: string, mediaType: 'image' | 'video') {
-  const targetList = mediaType === 'video' ? publishForm.videos : publishForm.images
-  const index = targetList.indexOf(url)
-  if (index >= 0) {
-    targetList.splice(index, 1)
-  }
-  if (mediaType === 'image' && publishForm.coverImage === url) {
-    publishForm.coverImage = publishForm.images[0] || ''
-  }
-}
-
 async function fetchMyProperties() {
   if (!authStore.userInfo?.id) return
   loading.value = true
@@ -400,73 +181,12 @@ async function fetchMyProperties() {
   }
 }
 
-async function handlePublish() {
-  if (!publishForm.title || !publishForm.type || publishForm.price <= 0 || !publishForm.address) {
-    ElMessage.warning('请填写完整信息')
-    return
-  }
-  if (publishForm.images.length > MAX_PROPERTY_IMAGES) {
-    ElMessage.warning(`图片最多 ${MAX_PROPERTY_IMAGES} 张`)
-    return
-  }
-  if (publishForm.videos.length > MAX_PROPERTY_VIDEOS) {
-    ElMessage.warning(`视频最多 ${MAX_PROPERTY_VIDEOS} 个`)
-    return
-  }
-
-  publishing.value = true
-  try {
-    const cover =
-      publishForm.coverImage && publishForm.images.includes(publishForm.coverImage)
-        ? publishForm.coverImage
-        : publishForm.images[0]
-    const payload = {
-      title: publishForm.title,
-      propertyType: publishForm.type,
-      rentPrice: publishForm.price,
-      address: publishForm.address,
-      area: publishForm.area,
-      floor: publishForm.floor,
-      totalFloor: publishForm.totalFloors,
-      layout: `${publishForm.rooms}室${publishForm.livingRooms}厅${publishForm.bathrooms}卫`,
-      description: publishForm.description,
-      images: publishForm.images,
-      videos: publishForm.videos,
-      coverImage: cover,
-    }
-    if (editingId.value) {
-      await updateProperty(editingId.value, payload)
-      ElMessage.success('房源更新成功')
-    } else {
-      await createProperty(payload)
-      ElMessage.success(
-        isPlatformAdmin(authStore.userInfo?.role || '')
-          ? '房源已上架'
-          : '已保存，请等待店长或超级管理员审核通过后即可在前台展示',
-      )
-    }
-    showPublishDialog.value = false
-    editingId.value = null
-    Object.assign(publishForm, {
-      title: '', type: '', price: 0, area: 0, rooms: 0,
-      livingRooms: 0, bathrooms: 0, floor: 1, totalFloors: 1,
-      decoration: '精装', address: '', description: '', images: [], videos: [], coverImage: '',
-    })
-    fetchMyProperties()
-  } catch {
-    ElMessage.error('发布失败，请稍后重试')
-  } finally {
-    publishing.value = false
-  }
+function onPropertyFormSaved() {
+  fetchMyProperties()
 }
 
 function openPublishDialog() {
   editingId.value = null
-  Object.assign(publishForm, {
-    title: '', type: '', price: 0, area: 0, rooms: 0,
-    livingRooms: 0, bathrooms: 0, floor: 1, totalFloors: 1,
-    decoration: '精装', address: '', description: '', images: [], videos: [], coverImage: '',
-  })
   showPublishDialog.value = true
 }
 
@@ -475,26 +195,7 @@ function viewDetail(id: number) {
 }
 
 function editProperty(id: number) {
-  const target = properties.value.find((item) => item.id === id)
-  if (!target) return
   editingId.value = id
-  Object.assign(publishForm, {
-    title: target.title || '',
-    type: target.type || '',
-    price: target.price || 0,
-    area: target.area || 0,
-    rooms: target.rooms || 0,
-    livingRooms: target.livingRooms || 0,
-    bathrooms: target.bathrooms || 0,
-    floor: target.floor || 1,
-    totalFloors: target.totalFloors || 1,
-    decoration: target.decoration || '精装',
-    address: target.address || '',
-    description: target.description || '',
-    images: [...(target.images || [])],
-    videos: [...(target.videos || [])],
-    coverImage: target.coverImage || target.images?.[0] || '',
-  })
   showPublishDialog.value = true
 }
 
@@ -628,102 +329,9 @@ onMounted(async () => {
   &.inactive { background: #f4f4f5; color: #909399; }
 }
 
-.room-inputs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .pagination {
   display: flex;
   justify-content: center;
   margin-top: var(--spacing-xl);
-}
-
-.media-upload-section {
-  width: 100%;
-}
-
-.media-upload-controls {
-  display: flex;
-  align-items: center;
-}
-
-.media-uploader {
-  :deep(.el-upload) {
-    display: inline-flex;
-    justify-content: flex-start;
-    width: auto;
-    border: none;
-  }
-}
-
-.upload-hint {
-  display: block;
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--el-text-color-secondary);
-}
-
-.media-preview {
-  margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%;
-}
-
-.preview-item {
-  position: relative;
-  width: 100px;
-  height: 80px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-
-  &.is-cover {
-    outline: 2px solid var(--el-color-success);
-    outline-offset: 1px;
-  }
-}
-
-.preview-actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 2px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
-}
-
-.preview-item img,
-.preview-item video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-item-video {
-  width: 160px;
-}
-
-.remove-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  cursor: pointer;
-  line-height: 18px;
-  font-size: 12px;
-  padding: 0;
 }
 </style>

@@ -1,6 +1,42 @@
 <template>
   <div>
     <div class="content">
+      <PropertyFormDialog
+        v-model:visible="propertyFormVisible"
+        :property-id="formPropertyId"
+        @saved="load"
+      />
+      <el-dialog v-model="viewDialogVisible" title="房源详情" width="720px" destroy-on-close @closed="onViewClosed">
+        <div v-loading="viewLoading" class="view-dialog-body">
+          <template v-if="viewDetail">
+            <div v-if="viewCover" class="view-cover">
+              <img :src="viewCover" alt="">
+            </div>
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="标题" :span="2">{{ viewDetail.title }}</el-descriptions-item>
+              <el-descriptions-item label="状态">{{ statusText(String(viewDetail.status || '')) }}</el-descriptions-item>
+              <el-descriptions-item label="区域">{{ viewDetail.district || '—' }}</el-descriptions-item>
+              <el-descriptions-item label="租金">¥{{ viewDetail.rentPrice }}/月</el-descriptions-item>
+              <el-descriptions-item label="面积">{{ viewDetail.area }}㎡</el-descriptions-item>
+              <el-descriptions-item label="房型">{{ viewDetail.propertyType || '—' }}</el-descriptions-item>
+              <el-descriptions-item label="户型">{{ viewDetail.layout || '—' }}</el-descriptions-item>
+              <el-descriptions-item label="楼层">
+                {{ viewDetail.floor ?? '—' }} / {{ viewDetail.totalFloor ?? '—' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="地址" :span="2">{{ viewDetail.address || '—' }}</el-descriptions-item>
+              <el-descriptions-item label="描述" :span="2">
+                <div class="view-desc">{{ viewDetail.description || '—' }}</div>
+              </el-descriptions-item>
+            </el-descriptions>
+            <div v-if="viewGallery.length" class="view-gallery">
+              <div v-for="(u, i) in viewGallery" :key="`${u}-${i}`" class="view-gallery-item">
+                <img :src="u" alt="">
+              </div>
+            </div>
+          </template>
+        </div>
+      </el-dialog>
+
       <div class="top-actions">
         <el-button type="success" @click="goCreate">➕ 新增房源</el-button>
       </div>
@@ -54,10 +90,11 @@
             <template #default="{ row }">{{ row.ownerId ?? '-' }}</template>
           </el-table-column>
           <el-table-column prop="createTime" label="更新时间" width="120" />
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="操作" width="320" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" class="btn-edit" @click="goEdit(row)">编辑</el-button>
-              <el-button size="small" @click="goView(row)">查看</el-button>
+              <el-button size="small" class="btn-edit" @click="openEdit(row)">编辑</el-button>
+              <el-button size="small" @click="openView(row)">查看</el-button>
+              <el-button size="small" type="danger" plain @click="deleteRow(row)">删除</el-button>
               <template v-if="isPlatformAdmin(role) && row.status === 'pending'">
                 <el-button size="small" type="success" link @click="approveRow(row)">通过上架</el-button>
                 <el-button size="small" type="danger" link @click="rejectRow(row)">驳回</el-button>
@@ -87,15 +124,42 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPropertyList, recommendProperty, approvePropertyListing, rejectPropertyListing } from '@/api/property'
+import PropertyFormDialog from '@/components/property/PropertyFormDialog.vue'
+import {
+  getPropertyList,
+  getPropertyDetail,
+  deletePropertyById,
+  recommendProperty,
+  approvePropertyListing,
+  rejectPropertyListing,
+} from '@/api/property'
 import { isPlatformAdmin } from '@/constants/roles'
 import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const role = computed(() => authStore.userInfo?.role || '')
+
+const propertyFormVisible = ref(false)
+const formPropertyId = ref<number | null>(null)
+const viewDialogVisible = ref(false)
+const viewLoading = ref(false)
+const viewDetail = ref<Record<string, unknown> | null>(null)
+
+const viewCover = computed(() => {
+  const d = viewDetail.value
+  if (!d) return ''
+  const cover = d.coverImage as string | undefined
+  const imgs = d.images as string[] | undefined
+  return cover || imgs?.[0] || ''
+})
+
+const viewGallery = computed(() => {
+  const d = viewDetail.value
+  if (!d) return [] as string[]
+  const imgs = (d.images as string[] | undefined) || []
+  return imgs.length ? imgs : viewCover.value ? [viewCover.value] : []
+})
 
 const loading = ref(false)
 const rows = ref<Record<string, unknown>[]>([])
@@ -155,15 +219,46 @@ async function load() {
 }
 
 function goCreate() {
-  router.push({ path: '/user/properties', query: { new: '1' } })
+  formPropertyId.value = null
+  propertyFormVisible.value = true
 }
 
-function goView(row: Record<string, unknown>) {
-  router.push(`/properties/${row.id}`)
+async function openView(row: Record<string, unknown>) {
+  viewDialogVisible.value = true
+  viewDetail.value = null
+  viewLoading.value = true
+  try {
+    const raw = await getPropertyDetail(Number(row.id))
+    viewDetail.value = raw as Record<string, unknown>
+  } catch {
+    viewDialogVisible.value = false
+  } finally {
+    viewLoading.value = false
+  }
 }
 
-function goEdit(row: Record<string, unknown>) {
-  router.push({ path: '/user/properties', query: { edit: String(row.id) } })
+function openEdit(row: Record<string, unknown>) {
+  formPropertyId.value = Number(row.id)
+  propertyFormVisible.value = true
+}
+
+function onViewClosed() {
+  viewDetail.value = null
+}
+
+async function deleteRow(row: Record<string, unknown>) {
+  try {
+    await ElMessageBox.confirm('确定删除该房源？此操作不可恢复。', '删除房源', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+    })
+    await deletePropertyById(Number(row.id))
+    ElMessage.success('已删除')
+    await load()
+  } catch {
+    /* 取消或失败 */
+  }
 }
 
 async function approveRow(row: Record<string, unknown>) {
@@ -311,5 +406,45 @@ onMounted(load)
 .pagination-info {
   font-size: 14px;
   color: #999;
+}
+.view-dialog-body {
+  min-height: 120px;
+}
+.view-cover {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 220px;
+  background: #f3f4f6;
+  img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    display: block;
+  }
+}
+.view-desc {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.view-gallery {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.view-gallery-item {
+  width: 88px;
+  height: 66px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 </style>

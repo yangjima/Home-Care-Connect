@@ -6,6 +6,10 @@ spring:
   application:
     name: user-service
 
+  # 本机可选配置：application-local.yml（已 gitignore，存在则自动合并） 通过这种方式来避免将敏感信息暴露在仓库中
+  config:
+    import: optional:classpath:application-local.yml
+
   # 数据源配置（由 Nacos shared.yaml 提供默认值）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -36,6 +40,16 @@ spring:
       discovery:
         server-addr: ${NACOS_HOST:localhost}:8848
 
+# 登录密码 RSA 解密：PKCS#8 PEM，须与前端 VITE_LOGIN_RSA_PUBLIC_KEY 为同一对密钥。
+# 推荐在 application-local.yml（已 gitignore）中配置，或通过环境变量 LOGIN_RSA_PRIVATE_KEY（多行 PEM 可用 \n）
+app:
+  security:
+    login-rsa:
+      private-key: ${LOGIN_RSA_PRIVATE_KEY:}
+  user-stats:
+    # 「在线」人数：最近多少分钟内有登录记录
+    online-within-minutes: ${USER_STATS_ONLINE_WITHIN_MINUTES:15}
+
 # MyBatis-Plus 配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -63,20 +77,7 @@ jwt:
   # refresh token 默认 7 天，可按需通过环境变量覆盖
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
 
-# 邮件验证码发送配置（预留：你可以在 Nacos/shared.yaml 或环境变量里覆盖）
-app:
-  mail:
-    enabled: ${MAIL_ENABLED:false}
-    host: ${MAIL_HOST:}
-    port: ${MAIL_PORT:465}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    from: ${MAIL_FROM:}
-    ssl: ${MAIL_SSL:true}
-  security:
-    login-rsa:
-      # PKCS#8 PEM private key, used to decrypt login password ciphertext (optional)
-      private-key: ${LOGIN_RSA_PRIVATE_KEY:}
+
 
 # Actuator 健康检查配置
 management:

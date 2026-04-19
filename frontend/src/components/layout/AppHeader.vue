@@ -76,6 +76,22 @@
       <router-link to="/purchase" class="mobile-link" @click="mobileMenuOpen = false">本地商城</router-link>
       <router-link to="/secondhand" class="mobile-link" @click="mobileMenuOpen = false">跳蚤市场</router-link>
       <router-link to="/ai" class="mobile-link" @click="mobileMenuOpen = false">AI 助手</router-link>
+
+      <div class="mobile-auth">
+        <template v-if="authStore.isLoggedIn">
+          <router-link to="/user/profile" class="mobile-link" @click="mobileMenuOpen = false">个人中心</router-link>
+          <router-link v-if="canAdmin" to="/admin/dashboard" class="mobile-link" @click="mobileMenuOpen = false">
+            系统后台
+          </router-link>
+          <button type="button" class="mobile-link mobile-link--button" @click="onMobileLogout">退出登录</button>
+        </template>
+        <template v-else>
+          <router-link to="/auth/login" class="mobile-link" @click="mobileMenuOpen = false">登录</router-link>
+          <router-link to="/auth/register" class="mobile-link mobile-link--primary" @click="mobileMenuOpen = false">
+            注册
+          </router-link>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -110,6 +126,11 @@ async function handleUserCommand(command: string) {
   } else if (command === 'admin') {
     router.push('/admin/dashboard')
   }
+}
+
+async function onMobileLogout() {
+  mobileMenuOpen.value = false
+  await handleUserCommand('logout')
 }
 </script>
 
@@ -225,14 +246,42 @@ async function handleUserCommand(command: string) {
 }
 
 .mobile-link {
+  display: block;
+  width: 100%;
+  text-align: left;
   padding: 12px 0;
   color: var(--color-text-primary);
   font-size: 15px;
   border-bottom: 1px solid var(--border-color-light);
+  text-decoration: none;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  font: inherit;
 
   &:last-child {
     border-bottom: none;
   }
+}
+
+.mobile-link--primary {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 主菜单最后一项去掉底边，避免与下方账号区块形成「双线」 */
+.mobile-menu > a.mobile-link:last-of-type {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.mobile-auth {
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: var(--color-bg-page);
+  border-radius: var(--border-radius-base);
 }
 
 @media (max-width: 768px) {

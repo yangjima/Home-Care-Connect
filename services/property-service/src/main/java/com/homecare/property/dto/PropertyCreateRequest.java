@@ -49,4 +49,7 @@ public class PropertyCreateRequest {
 
     /** 视频URL列表 */
     private List<String> videos;
+
+    /** 所属门店（超级管理员/商家发布时可指定；店长由服务端强制为本店） */
+    private Long storeId;
 }

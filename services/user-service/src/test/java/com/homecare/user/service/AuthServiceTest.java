@@ -11,6 +11,7 @@ import com.homecare.user.repository.UserRepository;
 import com.homecare.user.security.RsaPasswordDecryptor;
 import com.homecare.user.service.impl.AuthServiceImpl;
 import com.homecare.user.service.impl.UserServiceImpl;
+import com.homecare.user.service.mail.EmailVerificationMailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -52,6 +53,9 @@ class AuthServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+    @Mock
+    private EmailVerificationMailService emailVerificationMailService;
+
     private AuthServiceImpl authService;
 
     @BeforeEach
@@ -62,7 +66,8 @@ class AuthServiceTest {
                 jwtUtil,
                 passwordEncoder,
                 redisTemplate,
-                new RsaPasswordDecryptor("")
+                new RsaPasswordDecryptor(""),
+                emailVerificationMailService
         );
         ReflectionTestUtils.setField(authService, "accessTokenExpiration", 86400000L);
         ReflectionTestUtils.setField(authService, "refreshTokenExpiration", 604800000L);

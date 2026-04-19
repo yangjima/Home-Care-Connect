@@ -36,7 +36,7 @@
 | Property Service | Spring Boot | 房源 CRUD、媒体上传、看房预约与状态 |
 | Service Order Service | Spring Boot | 服务订单、确认/完成/支付等流程接口 |
 | Asset Service | Spring Boot | 采购商品、二手发布与列表 |
-| AI Service | FastAPI（如已启用） | 多 Agent 对话 |
+| AI Service | Langgraph + FastAPI | 多 Agent 对话 |
 | Frontend | Vue 3 + Vite + Pinia + Element Plus | 用户端 + 系统后台 |
 
 基础设施常见组合：**MySQL、Redis、MinIO**；本地/容器编排可参考 `infrastructure/docker/docker-compose.yml`。
@@ -52,7 +52,7 @@
 | `services/property-service` | 房源与看房 |
 | `services/service-order-service` | 服务订单与相关接口 |
 | `services/asset-service` | 采购与二手 |
-| `services/ai-service`（若存在） | AI 服务 |
+| `services/ai-service` | AI 服务 |
 | `frontend` | Vue 3 前端工程 |
 | `infrastructure` | Docker、MySQL 初始化脚本等 |
 | `docs` | 设计文档、部署指南等 |

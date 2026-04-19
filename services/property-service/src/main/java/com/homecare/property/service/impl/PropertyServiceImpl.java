@@ -14,6 +14,7 @@ import com.homecare.property.entity.PropertyViewing;
 import com.homecare.property.repository.PropertyImageRepository;
 import com.homecare.property.repository.PropertyRepository;
 import com.homecare.property.repository.PropertyViewingRepository;
+import com.homecare.property.repository.StoreRepository;
 import com.homecare.property.service.PropertyService;
 import com.homecare.property.util.Roles;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,7 @@ public class PropertyServiceImpl implements PropertyService {
     private final PropertyRepository propertyRepository;
     private final PropertyImageRepository propertyImageRepository;
     private final PropertyViewingRepository propertyViewingRepository;
+    private final StoreRepository storeRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${minio.buckets.property:property-images}")
@@ -90,7 +92,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse createProperty(PropertyCreateRequest request, Long userId, String role) {
+    public PropertyResponse createProperty(PropertyCreateRequest request, Long userId, String role, Long operatorStoreId) {
         if (!Roles.canCreateProperty(role)) {
             throw new BusinessException(403, "无权发布房源");
         }
@@ -98,11 +100,14 @@ public class PropertyServiceImpl implements PropertyService {
         BeanUtils.copyProperties(request, property);
         property.setPropertyType(normalizePropertyType(property.getPropertyType()));
         property.setOwnerId(userId);
-        // 兼容前端未传 storeId 的场景，避免 DB 非空约束导致新增失败
-        if (property.getStoreId() == null) {
-            property.setStoreId(1L);
+
+        Long resolvedStore = resolveStoreIdForCreate(request.getStoreId(), role, operatorStoreId);
+        if (storeRepository.countById(resolvedStore) <= 0) {
+            throw new BusinessException(400, "门店不存在或已删除");
         }
-        if (Roles.isPlatformAdmin(role)) {
+        property.setStoreId(resolvedStore);
+
+        if (Roles.isSuperAdmin(role) || Roles.isStoreManager(role)) {
             property.setStatus("vacant");
         } else {
             property.setStatus("pending");
@@ -128,30 +133,48 @@ public class PropertyServiceImpl implements PropertyService {
         List<String> videos = request.getVideos() != null ? request.getVideos() : Collections.emptyList();
         replacePropertyMedia(property.getId(), images, videos, request.getCoverImage());
 
-        log.info("创建房产: id={}, title={}", property.getId(), property.getTitle());
-        return getPropertyById(property.getId(), userId, role);
+        log.info("创建房产: id={}, title={}, storeId={}", property.getId(), property.getTitle(), property.getStoreId());
+        return getPropertyById(property.getId(), userId, role, operatorStoreId);
+    }
+
+    private Long resolveStoreIdForCreate(Long requestedStoreId, String role, Long operatorStoreId) {
+        if (Roles.isStoreManager(role)) {
+            if (operatorStoreId == null) {
+                throw new BusinessException(403, "账号未绑定门店，无法发布房源");
+            }
+            return operatorStoreId;
+        }
+        if (requestedStoreId != null) {
+            return requestedStoreId;
+        }
+        Long fallback = storeRepository.selectFirstStoreId();
+        if (fallback == null) {
+            throw new BusinessException(422, "系统中暂无门店，无法发布房源，请先创建门店或导入门店数据");
+        }
+        return fallback;
     }
 
     @Override
-    public PropertyResponse getPropertyById(Long id, Long viewerUserId, String viewerRole) {
+    public PropertyResponse getPropertyById(Long id, Long viewerUserId, String viewerRole, Long viewerStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        assertPropertyReadable(property, viewerUserId, viewerRole);
+        assertPropertyReadable(property, viewerUserId, viewerRole, viewerStoreId);
         incrementViewCount(id);
         return toPropertyResponse(property);
     }
 
     @Override
     @Transactional
-    public PropertyResponse updateProperty(Long id, PropertyCreateRequest request, Long userId, String role) {
+    public PropertyResponse updateProperty(Long id, PropertyCreateRequest request, Long userId, String role,
+            Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
 
-        assertPropertyOwnerOrAdmin(property, userId, role, "无权修改此房产");
+        assertCanManageProperty(property, userId, role, operatorStoreId, "无权修改此房产");
 
         BeanUtils.copyProperties(request, property, "id", "ownerId", "storeId", "createTime");
         property.setPropertyType(normalizePropertyType(property.getPropertyType()));
@@ -173,17 +196,17 @@ public class PropertyServiceImpl implements PropertyService {
         List<String> videos = request.getVideos() != null ? request.getVideos() : Collections.emptyList();
         replacePropertyMedia(id, images, videos, request.getCoverImage());
 
-        return getPropertyById(id, userId, role);
+        return getPropertyById(id, userId, role, operatorStoreId);
     }
 
     @Override
     @Transactional
-    public void deleteProperty(Long id, Long userId, String role) {
+    public void deleteProperty(Long id, Long userId, String role, Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        assertPropertyOwnerOrAdmin(property, userId, role, "无权删除此房产");
+        assertCanManageProperty(property, userId, role, operatorStoreId, "无权删除此房产");
         propertyRepository.deleteById(id);
         // 图片也会被逻辑删除
         propertyImageRepository.delete(
@@ -196,10 +219,14 @@ public class PropertyServiceImpl implements PropertyService {
     public PageResult<PropertyResponse> listProperties(int page, int pageSize, String keyword,
             String propertyType, String district, BigDecimal minPrice, BigDecimal maxPrice,
             List<String> propertyTypes, List<String> statuses, Long ownerId, String sort,
-            List<String> facilities) {
+            List<String> facilities, String listerRole, Long listerStoreId) {
 
         Page<Property> pageParam = new Page<>(page, pageSize);
         LambdaQueryWrapper<Property> wrapper = new LambdaQueryWrapper<>();
+
+        if (Roles.isStoreManager(listerRole) && listerStoreId != null) {
+            wrapper.eq(Property::getStoreId, listerStoreId);
+        }
 
         List<String> effectiveStatuses = normalizeStatusList(statuses);
         if (ownerId != null) {
@@ -267,16 +294,16 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyResponse publishProperty(Long id, Long userId, String role) {
+    public PropertyResponse publishProperty(Long id, Long userId, String role, Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        assertPropertyOwnerOrAdmin(property, userId, role, "无权上架此房源");
+        assertCanManageProperty(property, userId, role, operatorStoreId, "无权上架此房源");
         if ("occupied".equals(property.getStatus())) {
             throw new BusinessException(400, "已出租房源不可申请上架");
         }
-        if (Roles.isPlatformAdmin(role)) {
+        if (Roles.isSuperAdmin(role) || Roles.isStoreManager(role)) {
             property.setStatus("vacant");
         } else {
             property.setStatus("pending");
@@ -289,12 +316,13 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse approvePropertyListing(Long id, Long operatorUserId, String operatorRole) {
-        requirePlatformAdmin(operatorRole);
+    public PropertyResponse approvePropertyListing(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
+        assertCanModerateListing(property, operatorRole, operatorStoreId);
         if (!"pending".equals(property.getStatus())) {
             throw new BusinessException(400, "仅待审核状态的房源可通过上架审批");
         }
@@ -306,12 +334,13 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse rejectPropertyListing(Long id, Long operatorUserId, String operatorRole) {
-        requirePlatformAdmin(operatorRole);
+    public PropertyResponse rejectPropertyListing(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
+        assertCanModerateListing(property, operatorRole, operatorStoreId);
         if (!"pending".equals(property.getStatus())) {
             throw new BusinessException(400, "仅待审核状态的房源可驳回");
         }
@@ -322,12 +351,12 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyResponse offlineProperty(Long id, Long userId, String role) {
+    public PropertyResponse offlineProperty(Long id, Long userId, String role, Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        assertPropertyOwnerOrAdmin(property, userId, role, "无权下架此房源");
+        assertCanManageProperty(property, userId, role, operatorStoreId, "无权下架此房源");
         property.setStatus("reserved");
         propertyRepository.updateById(property);
         log.info("下架房产: id={}", id);
@@ -344,14 +373,13 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PropertyResponse recommendProperty(Long id, boolean recommended, Long userId, String role) {
-        if (!Roles.isPlatformAdmin(role)) {
-            throw new BusinessException(403, "仅店长或超级管理员可设置推荐");
-        }
+    public PropertyResponse recommendProperty(Long id, boolean recommended, Long userId, String role,
+            Long operatorStoreId) {
         Property property = propertyRepository.selectById(id);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
+        assertCanModerateListing(property, role, operatorStoreId);
         property.setIsRecommended(recommended);
         propertyRepository.updateById(property);
         return toPropertyResponse(property);
@@ -380,43 +408,46 @@ public class PropertyServiceImpl implements PropertyService {
         propertyViewingRepository.insert(viewing);
         log.info("创建预约看房: id={}, propertyId={}, userId={}", viewing.getId(), request.getPropertyId(), userId);
 
-        return getViewingById(viewing.getId(), userId, Roles.TENANT);
+        return getViewingById(viewing.getId(), userId, Roles.TENANT, null);
     }
 
     @Override
-    public ViewingResponse getViewingById(Long id, Long operatorUserId, String operatorRole) {
+    public ViewingResponse getViewingById(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         PropertyViewing viewing = propertyViewingRepository.selectById(id);
         if (viewing == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        assertCanReadViewing(viewing, operatorUserId, operatorRole);
+        assertCanReadViewing(viewing, operatorUserId, operatorRole, operatorStoreId);
         return toViewingResponse(viewing);
     }
 
     @Override
-    public ViewingResponse confirmViewing(Long id, Long operatorUserId, String operatorRole) {
+    public ViewingResponse confirmViewing(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         PropertyViewing viewing = propertyViewingRepository.selectById(id);
         if (viewing == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole);
+        assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole, operatorStoreId);
         viewing.setStatus("confirmed");
         propertyViewingRepository.updateById(viewing);
         return toViewingResponse(viewing);
     }
 
     @Override
-    public ViewingResponse cancelViewing(Long id, Long operatorUserId, String operatorRole) {
+    public ViewingResponse cancelViewing(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         PropertyViewing viewing = propertyViewingRepository.selectById(id);
         if (viewing == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        if (Roles.isPlatformAdmin(operatorRole)) {
+        if (Roles.isSuperAdmin(operatorRole)) {
             // ok
         } else if (viewing.getUserId() != null && viewing.getUserId().equals(operatorUserId)) {
             // ok
         } else {
-            assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole);
+            assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole, operatorStoreId);
         }
         viewing.setStatus("cancelled");
         propertyViewingRepository.updateById(viewing);
@@ -424,12 +455,13 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public ViewingResponse completeViewing(Long id, Long operatorUserId, String operatorRole) {
+    public ViewingResponse completeViewing(Long id, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         PropertyViewing viewing = propertyViewingRepository.selectById(id);
         if (viewing == null) {
             throw new BusinessException(404, "预约不存在");
         }
-        assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole);
+        assertCanManageViewingAsOwner(viewing, operatorUserId, operatorRole, operatorStoreId);
         viewing.setStatus("completed");
         propertyViewingRepository.updateById(viewing);
         return toViewingResponse(viewing);
@@ -437,16 +469,40 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public PageResult<ViewingResponse> listViewings(int page, int pageSize, Long propertyId,
-            Long userId, String status, Long operatorUserId, String operatorRole) {
+            Long userId, String status, Long operatorUserId, String operatorRole, Long operatorStoreId) {
 
         Page<PropertyViewing> pageParam = new Page<>(page, pageSize);
         LambdaQueryWrapper<PropertyViewing> wrapper = new LambdaQueryWrapper<>();
 
         Long effectivePropertyId = propertyId;
         Long effectiveUserId = userId;
+        boolean skipPropertyEq = false;
 
-        if (Roles.isPlatformAdmin(operatorRole)) {
+        if (Roles.isSuperAdmin(operatorRole)) {
             // 透传筛选
+        } else if (Roles.isStoreManager(operatorRole)) {
+            effectiveUserId = null;
+            if (operatorStoreId == null) {
+                throw new BusinessException(403, "账号未绑定门店");
+            }
+            if (effectivePropertyId != null) {
+                Property p = propertyRepository.selectById(effectivePropertyId);
+                if (p == null) {
+                    throw new BusinessException(404, "房源不存在");
+                }
+                assertCanManageProperty(p, operatorUserId, operatorRole, operatorStoreId, "无权查看该房源的预约");
+            } else {
+                List<Long> ids = propertyRepository.selectList(new LambdaQueryWrapper<Property>()
+                                .select(Property::getId)
+                                .eq(Property::getStoreId, operatorStoreId)).stream()
+                        .map(Property::getId)
+                        .collect(Collectors.toList());
+                if (ids.isEmpty()) {
+                    return PageResult.of(0, page, pageSize, Collections.emptyList());
+                }
+                wrapper.in(PropertyViewing::getPropertyId, ids);
+                skipPropertyEq = true;
+            }
         } else if (Roles.isMerchant(operatorRole)) {
             effectiveUserId = null;
             if (effectivePropertyId == null) {
@@ -456,13 +512,13 @@ public class PropertyServiceImpl implements PropertyService {
             if (p == null) {
                 throw new BusinessException(404, "房源不存在");
             }
-            assertPropertyOwnerOrAdmin(p, operatorUserId, operatorRole, "无权查看该房源的预约");
+            assertCanManageProperty(p, operatorUserId, operatorRole, null, "无权查看该房源的预约");
         } else {
             effectivePropertyId = null;
             effectiveUserId = operatorUserId;
         }
 
-        if (effectivePropertyId != null) {
+        if (!skipPropertyEq && effectivePropertyId != null) {
             wrapper.eq(PropertyViewing::getPropertyId, effectivePropertyId);
         }
         if (effectiveUserId != null) {
@@ -486,12 +542,13 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional
-    public PropertyResponse uploadImages(Long propertyId, List<String> imageUrls, Long userId, String role) {
+    public PropertyResponse uploadImages(Long propertyId, List<String> imageUrls, Long userId, String role,
+            Long operatorStoreId) {
         Property property = propertyRepository.selectById(propertyId);
         if (property == null) {
             throw new BusinessException(404, "房产不存在");
         }
-        assertPropertyOwnerOrAdmin(property, userId, role, "无权更新该房源图片");
+        assertCanManageProperty(property, userId, role, operatorStoreId, "无权更新该房源图片");
         List<PropertyImage> existing = propertyImageRepository.selectList(
                 new LambdaQueryWrapper<PropertyImage>()
                         .eq(PropertyImage::getPropertyId, propertyId)
@@ -503,25 +560,34 @@ public class PropertyServiceImpl implements PropertyService {
         List<String> images = imageUrls != null ? imageUrls : Collections.emptyList();
         String cover = !images.isEmpty() ? images.get(0) : null;
         replacePropertyMedia(propertyId, images, videos, cover);
-        return getPropertyById(propertyId, userId, role);
+        return getPropertyById(propertyId, userId, role, operatorStoreId);
     }
 
     // ============ 私有辅助方法 ============
 
-    private void requirePlatformAdmin(String role) {
-        if (!Roles.isPlatformAdmin(role)) {
-            throw new BusinessException(403, "仅店长或超级管理员可操作");
+    private void assertCanModerateListing(Property property, String role, Long operatorStoreId) {
+        if (Roles.isSuperAdmin(role)) {
+            return;
         }
+        if (Roles.isStoreManager(role) && operatorStoreId != null
+                && property.getStoreId() != null && operatorStoreId.equals(property.getStoreId())) {
+            return;
+        }
+        throw new BusinessException(403, "无权操作该房源");
     }
 
     /**
-     * 未登录或普通访客仅可查看已上架（空置/已租）；待审、驳回、下架仅发布者或平台管理员。
+     * 未登录或普通访客仅可查看已上架（空置/已租）；待审、驳回、下架仅发布者或同门店店长/超管。
      */
-    private void assertPropertyReadable(Property property, Long viewerUserId, String viewerRole) {
-        if (Roles.isPlatformAdmin(viewerRole)) {
+    private void assertPropertyReadable(Property property, Long viewerUserId, String viewerRole, Long viewerStoreId) {
+        if (Roles.isSuperAdmin(viewerRole)) {
             return;
         }
         if (viewerUserId != null && property.getOwnerId() != null && property.getOwnerId().equals(viewerUserId)) {
+            return;
+        }
+        if (Roles.isStoreManager(viewerRole) && viewerStoreId != null
+                && property.getStoreId() != null && property.getStoreId().equals(viewerStoreId)) {
             return;
         }
         String st = property.getStatus();
@@ -531,48 +597,64 @@ public class PropertyServiceImpl implements PropertyService {
         throw new BusinessException(404, "房产不存在");
     }
 
-    private void assertPropertyOwnerOrAdmin(Property property, Long userId, String role, String message) {
+    private void assertCanManageProperty(Property property, Long userId, String role, Long operatorStoreId,
+            String message) {
         if (userId == null) {
             throw new BusinessException(401, "未登录");
         }
-        if (Roles.isPlatformAdmin(role)) {
+        if (Roles.isSuperAdmin(role)) {
             return;
         }
-        if (property.getOwnerId() != null && property.getOwnerId().equals(userId)) {
+        if (Roles.isStoreManager(role)) {
+            if (operatorStoreId == null || property.getStoreId() == null
+                    || !operatorStoreId.equals(property.getStoreId())) {
+                throw new BusinessException(403, message);
+            }
             return;
+        }
+        if (Roles.isMerchant(role)) {
+            if (property.getOwnerId() != null && property.getOwnerId().equals(userId)) {
+                return;
+            }
         }
         throw new BusinessException(403, message);
     }
 
-    private void assertCanReadViewing(PropertyViewing viewing, Long operatorUserId, String operatorRole) {
+    private void assertCanReadViewing(PropertyViewing viewing, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         if (operatorUserId == null) {
             throw new BusinessException(401, "未登录");
         }
-        if (Roles.isPlatformAdmin(operatorRole)) {
+        if (Roles.isSuperAdmin(operatorRole)) {
             return;
         }
         if (viewing.getUserId() != null && viewing.getUserId().equals(operatorUserId)) {
             return;
         }
         Property p = propertyRepository.selectById(viewing.getPropertyId());
-        if (p != null && p.getOwnerId() != null && p.getOwnerId().equals(operatorUserId)) {
+        if (p == null) {
+            throw new BusinessException(404, "房源不存在");
+        }
+        if (p.getOwnerId() != null && p.getOwnerId().equals(operatorUserId)) {
+            return;
+        }
+        if (Roles.isStoreManager(operatorRole) && operatorStoreId != null
+                && p.getStoreId() != null && p.getStoreId().equals(operatorStoreId)) {
             return;
         }
         throw new BusinessException(403, "无权查看此预约");
     }
 
-    private void assertCanManageViewingAsOwner(PropertyViewing viewing, Long operatorUserId, String operatorRole) {
+    private void assertCanManageViewingAsOwner(PropertyViewing viewing, Long operatorUserId, String operatorRole,
+            Long operatorStoreId) {
         if (operatorUserId == null) {
             throw new BusinessException(401, "未登录");
         }
-        if (Roles.isPlatformAdmin(operatorRole)) {
-            return;
-        }
         Property p = propertyRepository.selectById(viewing.getPropertyId());
-        if (p != null && p.getOwnerId() != null && p.getOwnerId().equals(operatorUserId)) {
-            return;
+        if (p == null) {
+            throw new BusinessException(404, "房源不存在");
         }
-        throw new BusinessException(403, "无权处理此预约");
+        assertCanManageProperty(p, operatorUserId, operatorRole, operatorStoreId, "无权处理此预约");
     }
 
     /**

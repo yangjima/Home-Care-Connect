@@ -26,4 +26,8 @@ public class UserResponse {
     private String storeName;
     private String status;
     private LocalDateTime createTime;
+    /** 首次登录时间 */
+    private LocalDateTime firstLoginAt;
+    /** 最近登录时间 */
+    private LocalDateTime lastLoginAt;
 }
