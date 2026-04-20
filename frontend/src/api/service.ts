@@ -1,8 +1,9 @@
 /**
  * 服务订单 API
  */
-import { get, post, del, put } from '@/utils/request'
-import { toOptionalPageQuery, toPageQuery } from '@/api/pagination'
+import { get, post } from '@/utils/request'
+import { toOptionalPageQuery } from '@/api/pagination'
+import { createResourceApi } from '@/api/resource'
 import type { PageParams, PageResult, ServiceStaffPublic } from '@/types'
 
 /** 公开：优秀服务人员（服务列表页） */
@@ -10,54 +11,46 @@ export function getStaffList() {
   return get<ServiceStaffPublic[]>('/service/staff')
 }
 
-// 服务类型列表（默认仅上架）
-export function getServiceTypes(params?: { keyword?: string; activeOnly?: boolean }) {
-  return get<object[]>('/service/service-types', { activeOnly: true, ...params })
-}
+// ========== 服务类型 ==========
 
-// 服务类型详情
-export function getServiceTypeDetail(id: number) {
-  return get<object>(`/service/service-types/${id}`)
-}
-
-export function createServiceType(data: {
+type ServiceTypeData = {
   name: string
   description?: string
   category?: string
   price: number
   unit?: string
   icon?: string
-}) {
-  return post<object>('/service/service-types', data)
 }
 
-export function updateServiceType(
+const serviceTypeApi = createResourceApi<PageParams, object, ServiceTypeData>('/service/service-types')
+
+// 服务类型列表（默认仅上架）
+export function getServiceTypes(params?: { keyword?: string; activeOnly?: boolean }) {
+  return get<object[]>('/service/service-types', { activeOnly: true, ...params })
+}
+
+export const getServiceTypeDetail = serviceTypeApi.detail
+export const createServiceType = serviceTypeApi.create
+export const updateServiceType = (
   id: number,
-  data: { name: string; description?: string; category: string; price: number; unit?: string; icon?: string },
-) {
-  return put<object>(`/service/service-types/${id}`, data)
-}
-
-export function deleteServiceType(id: number) {
-  return del(`/service/service-types/${id}`)
-}
+  data: ServiceTypeData & { category: string },
+) => serviceTypeApi.update(id, data)
+export const deleteServiceType = serviceTypeApi.remove
 
 /** 平台管理员：待上架审核的服务类型 */
 export function getPendingServiceTypes() {
   return get<object[]>('/service/service-types/admin/pending')
 }
 
-export function approveServiceTypeListing(id: number) {
-  return post<object>(`/service/service-types/${id}/approve-listing`)
-}
+export const approveServiceTypeListing = (id: number) => serviceTypeApi.action(id, 'approve-listing')
+export const rejectServiceTypeListing = (id: number) => serviceTypeApi.action(id, 'reject-listing')
+export const submitServiceTypeListing = (id: number) => serviceTypeApi.action(id, 'submit-listing')
 
-export function rejectServiceTypeListing(id: number) {
-  return post<object>(`/service/service-types/${id}/reject-listing`)
-}
+// ========== 服务订单 ==========
 
-export function submitServiceTypeListing(id: number) {
-  return post<object>(`/service/service-types/${id}/submit-listing`)
-}
+type OrderListParams = PageParams & { status?: string }
+
+const orderApi = createResourceApi<OrderListParams>('/service/orders')
 
 // 创建服务订单
 export function createServiceOrder(data: {
@@ -70,15 +63,9 @@ export function createServiceOrder(data: {
   return post<{ orderNo: string; id: number }>('/service/orders', data)
 }
 
-// 订单列表
-export function getOrderList(params: PageParams & { status?: string }) {
-  return get<PageResult<object>>('/service/orders', toPageQuery(params))
-}
-
-// 订单详情
-export function getOrderDetail(id: number) {
-  return get<object>(`/service/orders/${id}`)
-}
+export const getOrderList = orderApi.list
+export const getOrderDetail = orderApi.detail
+export const deleteOrder = orderApi.remove
 
 // 取消订单
 export function cancelOrder(id: number, reason?: string) {
@@ -94,30 +81,21 @@ export function payOrder(id: number, payMethod: string = 'wechat') {
   })
 }
 
-// 确认订单
-export function confirmOrder(id: number) {
-  return post(`/service/orders/${id}/confirm`)
-}
-
-// 完成订单
-export function completeOrder(id: number) {
-  return post(`/service/orders/${id}/complete`)
-}
-
-// 删除订单
-export function deleteOrder(id: number) {
-  return del(`/service/orders/${id}`)
-}
+export const confirmOrder = (id: number) => orderApi.action(id, 'confirm')
+export const completeOrder = (id: number) => orderApi.action(id, 'complete')
 
 // 我的订单
-export function getMyOrders(params?: (PageParams & { status?: string })) {
+export function getMyOrders(params?: OrderListParams) {
   return get<PageResult<object>>('/service/orders/my', toOptionalPageQuery(params))
 }
 
-// 评价列表
-export function getReviewList(params: PageParams & { orderId?: number; staffId?: number }) {
-  return get<PageResult<object>>('/service/reviews', toPageQuery(params))
-}
+// ========== 评价 ==========
+
+type ReviewListParams = PageParams & { orderId?: number; staffId?: number }
+
+const reviewApi = createResourceApi<ReviewListParams>('/service/reviews')
+
+export const getReviewList = reviewApi.list
 
 // 创建评价
 export function createReview(data: {

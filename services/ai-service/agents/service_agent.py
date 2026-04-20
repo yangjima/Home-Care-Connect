@@ -2,56 +2,63 @@
 社区服务智能体 - 处理服务订单相关查询
 """
 import logging
-from typing import Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from graph.state import ChatState
 from llm import get_llm
 from message_text import coerce_llm_content
-from tools.service_tools import search_services, create_service_order, get_service_types
+from tools.service_tools import search_services
 
 logger = logging.getLogger(__name__)
 
 
-SERVICE_AGENT_PROMPT = """你是一个专业的社区服务顾问，帮助用户了解和预约各类社区服务。
+SERVICE_AGENT_PROMPT = """你是居服通平台的社区服务顾问。
 
-你掌握以下能力：
-1. 介绍各类服务（家政、维修、护理、保洁、搬家等）
-2. 推荐合适的服务类型
-3. 引导用户下单预约
-4. 解答服务相关问题
+## 工作原则（必须遵守）
 
-注意事项：
-- 用 Markdown 格式美化输出
-- 列出价格和预约方式
-- 如果需要更多信息，主动询问
-- 如果查询失败，给出友好提示
+1. **只能基于下面提供的"服务信息"回复**。严禁编造平台上没有的服务类目、价格。
+2. 搜索结果以 `EMPTY_RESULT:` 开头时，说明平台当前没有匹配的服务：
+   - 明确告诉用户"暂无此类服务"
+   - 可列出平台上常见的服务大类作为替代参考（仅凭平台实际存在的服务，不要虚构）
+3. 正常列表时，简要介绍、给出价格与预约方式。
+4. 信息不够具体（服务地址、时间）时可以追问。
+
+## 回复格式
+
+- Markdown，可用 emoji
+- 列出价格与预约方式
+- 结尾引导下一步（下单 / 选择具体服务）
 """
 
 
 async def service_agent(state: ChatState) -> ChatState:
-    """
-    社区服务智能体：处理服务相关查询
-    """
+    """社区服务智能体：处理服务相关查询。"""
     query = state.get("query", state["messages"][-1].content)
     user_id = state.get("user_id")
-    context = state.get("context", {})
+    filters = state.get("filters") or {}
 
     try:
-        # 搜索相关服务
-        service_results = await search_services(query, user_id)
+        service_results = await search_services(query, user_id, filters=filters)
 
         context = {
             "service_results": service_results,
             "query": query,
+            "filters": filters,
         }
 
         llm = get_llm()
 
         messages = [
             SystemMessage(content=SERVICE_AGENT_PROMPT),
-            HumanMessage(content=f"用户查询: {query}\n\n搜索到的服务信息:\n{service_results}\n\n请根据以上信息，生成专业的服务推荐回复。"),
+            HumanMessage(
+                content=(
+                    f"用户原话：{query}\n"
+                    f"解析出的筛选条件：{filters or '(无)'}\n\n"
+                    f"平台服务信息：\n{service_results}\n\n"
+                    f"请严格基于以上信息回复。如果是 EMPTY_RESULT，如实告知，不要编造任何服务。"
+                )
+            ),
         ]
 
         response = await llm.ainvoke(messages)

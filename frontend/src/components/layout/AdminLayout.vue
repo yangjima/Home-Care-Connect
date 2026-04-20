@@ -120,17 +120,7 @@ const adminMenus: AdminMenuItem[] = [
   { path: '/admin/stores', label: '门店管理', icon: '🏪', roles: [ROLE_ADMIN] },
   { path: '/admin/properties', label: '房源管理', icon: '🏠', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT] },
   { path: '/admin/services', label: '服务管理', icon: '🛠️', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER] },
-  {
-    path: '/admin/products',
-    label: '商品管理',
-    icon: '🛒',
-    roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT],
-    children: [
-      { path: '/admin/products/procurement', label: '本地商城商品管理', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT] },
-      { path: '/admin/products/secondhand', label: '跳蚤市场商品管理', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT] },
-    ],
-  },
-  { path: '/admin/products/new', label: '添加商品', icon: '📦', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT] },
+  { path: '/admin/products', label: '商品管理', icon: '🛒', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT] },
   { path: '/admin/listing-review', label: '上架审批', icon: '✅', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER] },
   { path: '/admin/orders', label: '订单管理', icon: '📋', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER] },
   { path: '/admin/staff', label: '用户管理', icon: '👥', roles: [ROLE_ADMIN, ROLE_STORE_MANAGER] },

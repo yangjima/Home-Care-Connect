@@ -189,12 +189,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'products/new',
-        name: 'AdminProductCreate',
-        component: () => import('@/views/admin/AdminProductCreatePage.vue'),
-        meta: {
-          title: '添加商品',
-          adminRoles: [ROLE_ADMIN, ROLE_STORE_MANAGER, ROLE_MERCHANT],
-        },
+        redirect: { name: 'AdminProducts' },
       },
       {
         path: 'staff',

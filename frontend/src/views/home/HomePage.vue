@@ -5,47 +5,82 @@
     <!-- Hero Section -->
     <section class="hero">
       <div class="container">
-        <h1 class="hero-title">欢迎来到居服通</h1>
-        <p class="hero-subtitle">智慧社区服务管理平台，为您的社区生活提供全方位服务支持(design by 杨金明)</p>
+        <div class="hero-inner">
+          <div class="hero-left">
+            <div class="hero-kicker">智慧社区 · 一站式生活服务</div>
+            <h1 class="hero-title">欢迎来到居服通</h1>
+            <p class="hero-subtitle">房源、社区服务、本地商城、跳蚤市场与 AI 助手，一次入口全都搞定。design by 杨金明</p>
 
-        <div class="search-box">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索房源、服务或二手物品..."
-            size="large"
-            clearable
-            @keyup.enter="handleSearch"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-            <template #append>
-              <el-button :icon="Search" @click="handleSearch">搜索</el-button>
-            </template>
-          </el-input>
-        </div>
+            <div class="search-box">
+              <el-input
+                v-model="searchKeyword"
+                placeholder="搜索房源、服务或二手物品..."
+                size="large"
+                clearable
+                @keyup.enter="handleSearch"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+                <template #append>
+                  <el-button :icon="Search" @click="handleSearch">搜索</el-button>
+                </template>
+              </el-input>
+            </div>
 
-        <div class="quick-links">
-          <router-link to="/properties" class="quick-link">
-            <span class="ql-icon">🏠</span>
-            <span>找房源</span>
-          </router-link>
-          <router-link to="/services" class="quick-link">
-            <span class="ql-icon">🛠️</span>
-            <span>找服务</span>
-          </router-link>
-          <router-link to="/purchase" class="quick-link">
-            <span class="ql-icon">🛒</span>
-            <span>本地商城</span>
-          </router-link>
-          <router-link to="/secondhand" class="quick-link">
-            <span class="ql-icon">🔄</span>
-            <span>跳蚤市场</span>
-          </router-link>
-          <router-link to="/ai" class="quick-link">
-            <span class="ql-icon">🤖</span>
-            <span>AI 助手</span>
-          </router-link>
+            <div class="quick-links" aria-label="快捷入口">
+              <router-link to="/properties" class="quick-link">
+                <span class="ql-icon">🏠</span>
+                <span>找房源</span>
+              </router-link>
+              <router-link to="/services" class="quick-link">
+                <span class="ql-icon">🛠️</span>
+                <span>找服务</span>
+              </router-link>
+              <router-link to="/purchase" class="quick-link">
+                <span class="ql-icon">🛒</span>
+                <span>本地商城</span>
+              </router-link>
+              <router-link to="/secondhand" class="quick-link">
+                <span class="ql-icon">🔄</span>
+                <span>跳蚤市场</span>
+              </router-link>
+              <router-link to="/ai" class="quick-link">
+                <span class="ql-icon">🤖</span>
+                <span>AI 助手</span>
+              </router-link>
+            </div>
+          </div>
+
+          <aside class="hero-right" aria-label="平台亮点">
+            <div class="hero-panel">
+              <div class="panel-title">今日推荐</div>
+              <div class="panel-list">
+                <router-link to="/properties" class="panel-item">
+                  <span class="pi-icon">🏡</span>
+                  <div class="pi-text">
+                    <div class="pi-main">优质房源</div>
+                    <div class="pi-sub">精选 {{ hotProperties.length }} 条，快速预约看房</div>
+                  </div>
+                </router-link>
+                <router-link to="/services" class="panel-item">
+                  <span class="pi-icon">🧰</span>
+                  <div class="pi-text">
+                    <div class="pi-main">热门服务</div>
+                    <div class="pi-sub">维修保洁上门，省时更省心</div>
+                  </div>
+                </router-link>
+                <router-link to="/ai" class="panel-item">
+                  <span class="pi-icon">✨</span>
+                  <div class="pi-text">
+                    <div class="pi-main">AI 助手</div>
+                    <div class="pi-sub">帮你快速匹配需求与推荐</div>
+                  </div>
+                </router-link>
+              </div>
+              <div class="panel-tip">提示：输入关键词回车即可搜索</div>
+            </div>
+          </aside>
         </div>
       </div>
     </section>
@@ -53,39 +88,51 @@
     <!-- Stats -->
     <section class="stats-section">
       <div class="container">
-        <div class="stats-grid">
-          <div v-for="item in stats" :key="item.label" class="stat-item">
-            <div class="stat-number">{{ item.value }}</div>
-            <div class="stat-label">{{ item.label }}</div>
+        <div class="stats-card">
+          <div class="stats-grid">
+            <div v-for="item in stats" :key="item.label" class="stat-item">
+              <div class="stat-number">{{ item.value }}</div>
+              <div class="stat-label">{{ item.label }}</div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Hot Properties -->
-    <section class="section">
+    <section class="section section--tight">
       <div class="container">
         <div class="section-header">
-          <h2>热门房源</h2>
-          <router-link to="/properties" class="more-link">查看更多 →</router-link>
+          <div class="section-title">
+            <h2>热门房源</h2>
+            <p>为你优选更受欢迎的社区房源</p>
+          </div>
+          <router-link to="/properties" class="more-link">查看更多</router-link>
         </div>
-        <div class="property-grid">
-          <PropertyCard v-for="item in hotProperties" :key="item.id" :property="item" />
-          <el-empty v-if="!loadingProperties && hotProperties.length === 0" description="暂无热门房源" />
+        <div class="section-surface">
+          <div class="property-grid">
+            <PropertyCard v-for="item in hotProperties" :key="item.id" :property="item" />
+            <el-empty v-if="!loadingProperties && hotProperties.length === 0" description="暂无热门房源" />
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Hot Services -->
-    <section class="section">
+    <section class="section section--alt">
       <div class="container">
         <div class="section-header">
-          <h2>热门服务</h2>
-          <router-link to="/services" class="more-link">查看更多 →</router-link>
+          <div class="section-title">
+            <h2>热门服务</h2>
+            <p>更快响应的到家服务，随叫随到</p>
+          </div>
+          <router-link to="/services" class="more-link">查看更多</router-link>
         </div>
-        <div class="service-grid">
-          <ServiceCard v-for="item in hotServices" :key="item.id" :service="item" />
-          <el-empty v-if="!loadingServices && hotServices.length === 0" description="暂无热门服务" />
+        <div class="section-surface">
+          <div class="service-grid">
+            <ServiceCard v-for="item in hotServices" :key="item.id" :service="item" />
+            <el-empty v-if="!loadingServices && hotServices.length === 0" description="暂无热门服务" />
+          </div>
         </div>
       </div>
     </section>
@@ -94,52 +141,62 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2>本地商城</h2>
-          <router-link to="/purchase" class="more-link">查看更多 →</router-link>
+          <div class="section-title">
+            <h2>本地商城</h2>
+            <p>精选好物，社区附近更快送达</p>
+          </div>
+          <router-link to="/purchase" class="more-link">查看更多</router-link>
         </div>
-        <div v-loading="loadingMall" class="feature-grid">
-          <router-link
-            v-for="item in hotMallProducts"
-            :key="item.id"
-            :to="'/purchase'"
-            class="mall-card"
-          >
-            <div class="mall-card-img">
-              <img v-if="mallCoverUrl(item)" :src="mallCoverUrl(item)!" :alt="item.name" class="mall-card-photo" />
-              <span v-else class="mall-card-emoji" aria-hidden="true">{{ mallCategoryEmoji(item.category) }}</span>
-              <span v-if="item.productTag" class="mall-card-tag">{{ item.productTag }}</span>
-            </div>
-            <div class="mall-card-body">
-              <h3 class="mall-card-name">{{ item.name }}</h3>
-              <div class="mall-card-meta">
-                <span class="mall-card-price">¥{{ formatMallPrice(item.price) }}</span>
-                <span class="mall-card-sales">已售 {{ item.salesCount ?? 0 }}</span>
+        <div class="section-surface">
+          <div v-loading="loadingMall" class="feature-grid">
+            <router-link
+              v-for="item in hotMallProducts"
+              :key="item.id"
+              :to="'/purchase'"
+              class="mall-card"
+            >
+              <div class="mall-card-img">
+                <img v-if="mallCoverUrl(item)" :src="mallCoverUrl(item)!" :alt="item.name" class="mall-card-photo" />
+                <span v-else class="mall-card-emoji" aria-hidden="true">{{ mallCategoryEmoji(item.category) }}</span>
+                <span v-if="item.productTag" class="mall-card-tag">{{ item.productTag }}</span>
               </div>
-            </div>
-          </router-link>
-          <el-empty
-            v-if="!loadingMall && hotMallProducts.length === 0"
-            class="grid-empty"
-            description="暂无商城商品"
-          />
+              <div class="mall-card-body">
+                <h3 class="mall-card-name">{{ item.name }}</h3>
+                <div class="mall-card-meta">
+                  <span class="mall-card-price">¥{{ formatMallPrice(item.price) }}</span>
+                  <span class="mall-card-sales">已售 {{ item.salesCount ?? 0 }}</span>
+                </div>
+              </div>
+            </router-link>
+            <el-empty
+              v-if="!loadingMall && hotMallProducts.length === 0"
+              class="grid-empty"
+              description="暂无商城商品"
+            />
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Flea market -->
-    <section class="section">
+    <section class="section section--alt section--end">
       <div class="container">
         <div class="section-header">
-          <h2>跳蚤市场</h2>
-          <router-link to="/secondhand" class="more-link">查看更多 →</router-link>
+          <div class="section-title">
+            <h2>跳蚤市场</h2>
+            <p>闲置好物循环利用，省钱也环保</p>
+          </div>
+          <router-link to="/secondhand" class="more-link">查看更多</router-link>
         </div>
-        <div v-loading="loadingSecondhand" class="feature-grid">
-          <SecondhandCard v-for="item in hotSecondhandItems" :key="item.id" :item="item" />
-          <el-empty
-            v-if="!loadingSecondhand && hotSecondhandItems.length === 0"
-            class="grid-empty"
-            description="暂无闲置商品"
-          />
+        <div class="section-surface">
+          <div v-loading="loadingSecondhand" class="feature-grid">
+            <SecondhandCard v-for="item in hotSecondhandItems" :key="item.id" :item="item" />
+            <el-empty
+              v-if="!loadingSecondhand && hotSecondhandItems.length === 0"
+              class="grid-empty"
+              description="暂无闲置商品"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -318,36 +375,98 @@ onMounted(async () => {
 }
 
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(1200px 600px at 10% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 60%),
+    radial-gradient(900px 520px at 100% 10%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
   color: white;
-  padding: 44px 0 36px;
-  text-align: center;
+  padding: 72px 0 84px;
 
-  .hero-title {
-    font-size: 40px;
-    font-weight: 700;
-    margin-bottom: 10px;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.18;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
   }
 
-  .hero-subtitle {
-    font-size: 18px;
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -220px;
+    width: 980px;
+    height: 480px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 65%);
+    filter: blur(6px);
     opacity: 0.9;
-    margin-bottom: 22px;
+    pointer-events: none;
   }
 }
 
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 36px;
+  align-items: center;
+}
+
+.hero-left {
+  text-align: left;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.hero-title {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  line-height: 1.12;
+}
+
+.hero-subtitle {
+  font-size: 18px;
+  opacity: 0.92;
+  margin-bottom: 22px;
+  max-width: 46ch;
+}
+
 .search-box {
-  max-width: 600px;
-  margin: 0 auto 22px;
+  max-width: 640px;
+  margin: 0 0 18px;
 
   :deep(.el-input__wrapper) {
-    border-radius: 24px 0 0 24px;
+    border-radius: 999px 0 0 999px;
     padding-left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
   }
 
   :deep(.el-input-group__append) {
-    border-radius: 0 24px 24px 0;
-    background: var(--color-primary);
+    border-radius: 0 999px 999px 0;
+    background: rgba(17, 24, 39, 0.92);
     color: white;
     border: none;
 
@@ -359,40 +478,141 @@ onMounted(async () => {
 
 .quick-links {
   display: flex;
-  justify-content: center;
-  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .quick-link {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: white;
-  opacity: 0.9;
-  transition: opacity 0.2s, transform 0.2s;
+  opacity: 0.95;
+  transition: opacity 0.2s, transform 0.2s, background 0.2s, border-color 0.2s;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
 
   &:hover {
     opacity: 1;
-    transform: translateY(-4px);
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.28);
   }
 
   .ql-icon {
-    font-size: 36px;
-    width: 56px;
-    height: 56px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 50%;
-    display: flex;
+    font-size: 20px;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 }
 
+.hero-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero-panel {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  padding: 18px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.92;
+  margin-bottom: 12px;
+}
+
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(17, 24, 39, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.2s, background 0.2s, border-color 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: rgba(17, 24, 39, 0.30);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+}
+
+.pi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.pi-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pi-main {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.pi-sub {
+  font-size: 12px;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-tip {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.88;
+}
+
 .stats-section {
-  background: var(--color-bg-white);
-  padding: var(--spacing-md) 0 var(--spacing-lg);
-  box-shadow: var(--shadow-light);
+  position: relative;
+  padding: 0 0 var(--spacing-xl);
+  margin-top: -36px;
+}
+
+.stats-card {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
+  padding: 18px 18px;
 }
 
 .stats-grid {
@@ -403,11 +623,13 @@ onMounted(async () => {
 
 .stat-item {
   text-align: center;
+  padding: 8px 0;
 
   .stat-number {
-    font-size: 30px;
-    font-weight: 700;
-    color: var(--color-primary);
+    font-size: 32px;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.02em;
   }
 
   .stat-label {
@@ -421,47 +643,116 @@ onMounted(async () => {
   padding: var(--spacing-lg) 0;
 }
 
+.section-surface {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(8px);
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 
   h2 {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
   }
 }
 
+.section-title {
+  display: flex;
+  flex-direction: column;
+
+  p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+}
+
+.section--alt {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.02) 0%, rgba(15, 23, 42, 0.00) 100%);
+}
+
+.section--tight {
+  padding-top: var(--spacing-md);
+}
+
+.section--end {
+  padding-bottom: calc(var(--spacing-lg) + 6px);
+}
+
 .more-link {
-  color: var(--color-primary);
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+
+  &::after {
+    content: '→';
+    opacity: 0.9;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: rgba(59, 130, 246, 0.35);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+    color: #0f172a;
+  }
 }
 
 .property-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .service-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   min-height: 80px;
+}
+
+.property-grid :deep(.base-card),
+.service-grid :deep(.base-card),
+.feature-grid :deep(.base-card) {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.property-grid :deep(.base-card:hover),
+.service-grid :deep(.base-card:hover),
+.feature-grid :deep(.base-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.12);
 }
 
 .mall-card {
   background: #fff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-light);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
   text-decoration: none;
   color: inherit;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -469,8 +760,8 @@ onMounted(async () => {
   flex-direction: column;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 22px 50px rgba(15, 23, 42, 0.12);
   }
 }
 
@@ -550,6 +841,15 @@ onMounted(async () => {
 }
 
 @media (max-width: 1024px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .hero-right {
+    justify-content: flex-start;
+  }
+
   .property-grid,
   .service-grid,
   .feature-grid {
@@ -558,16 +858,24 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
+  .hero {
+    padding: 52px 0 72px;
+  }
+
+  .hero-left {
+    text-align: left;
+  }
+
   .hero-title {
-    font-size: 32px;
+    font-size: 38px;
   }
 
   .hero-subtitle {
-    font-size: 16px;
+    font-size: 15px;
   }
 
-  .quick-links {
-    gap: var(--spacing-lg);
+  .search-box {
+    max-width: 100%;
   }
 
   .stats-grid {
@@ -578,6 +886,10 @@ onMounted(async () => {
   .service-grid,
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .section-surface {
+    padding: 12px;
   }
 }
 </style>

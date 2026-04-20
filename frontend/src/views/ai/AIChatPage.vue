@@ -54,7 +54,17 @@
             </div>
             <div class="message-content">
               <div v-if="msg.agent && msg.role === 'assistant'" class="agent-tag">{{ msg.agent }}</div>
-              <div class="message-text">{{ msg.content }}</div>
+              <div
+                v-if="msg.role === 'assistant'"
+                class="message-text is-markdown"
+                v-html="renderMarkdown(msg.content)"
+              ></div>
+              <div v-else class="message-text user-text">{{ msg.content }}</div>
+              <div v-if="msg.role === 'assistant' && msg.redirect" class="redirect-row">
+                <el-button size="small" type="primary" plain @click="goRedirect(msg.redirect)">
+                  前往相关页面 →
+                </el-button>
+              </div>
             </div>
           </div>
 
@@ -104,6 +114,8 @@ import type { InputInstance } from 'element-plus'
 import { Plus, Promotion } from '@element-plus/icons-vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { useAIStore } from '@/stores/ai'
+import router from '@/router'
+import { renderMarkdown } from '@/utils/markdown'
 
 const aiStore = useAIStore()
 
@@ -129,6 +141,12 @@ function scrollToBottom() {
       messagesRef.value.scrollTop = messagesRef.value.scrollHeight
     }
   })
+}
+
+async function goRedirect(url?: string | null) {
+  if (!url) return
+  await router.push(url)
+  scrollToBottom()
 }
 
 async function handleSend() {
@@ -182,10 +200,11 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .ai-chat-page {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--color-bg-page);
+  overflow: hidden;
 }
 
 .chat-container {
@@ -197,6 +216,7 @@ onUnmounted(() => {
   padding: var(--spacing-lg);
   gap: var(--spacing-lg);
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-sidebar {
@@ -361,6 +381,74 @@ onUnmounted(() => {
     line-height: 1.6;
     font-size: 14px;
     word-break: break-word;
+  }
+
+  .message-text.user-text {
+    white-space: pre-wrap;
+  }
+
+  /* Markdown content styling (scoped + v-html) */
+  .message-text.is-markdown {
+    :deep(p) {
+      margin: 0 0 10px;
+    }
+
+    :deep(p:last-child) {
+      margin-bottom: 0;
+    }
+
+    :deep(ul),
+    :deep(ol) {
+      margin: 6px 0 10px;
+      padding-left: 18px;
+    }
+
+    :deep(li) {
+      margin: 4px 0;
+    }
+
+    :deep(code) {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.06);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+    :deep(pre) {
+      margin: 8px 0 10px;
+      background: #0b1020;
+      color: #e7eaf3;
+      padding: 10px 12px;
+      border-radius: 10px;
+      overflow: auto;
+    }
+
+    :deep(pre code) {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: 12px;
+      white-space: pre;
+    }
+
+    :deep(blockquote) {
+      margin: 8px 0 10px;
+      padding: 6px 10px;
+      border-left: 3px solid var(--color-primary);
+      background: rgba(64, 158, 255, 0.08);
+      color: var(--color-text-regular);
+    }
+
+    :deep(a) {
+      color: var(--color-primary);
+      text-decoration: underline;
+      word-break: break-all;
+    }
+  }
+
+  .redirect-row {
+    margin-top: 8px;
   }
 }
 

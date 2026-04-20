@@ -8,13 +8,17 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AddUserDialog: typeof import('./components/admin/AddUserDialog.vue')['default']
     AdminBackEntry: typeof import('./components/admin/AdminBackEntry.vue')['default']
     AdminCrudToolbar: typeof import('./components/admin/AdminCrudToolbar.vue')['default']
     AdminEditDialog: typeof import('./components/admin/AdminEditDialog.vue')['default']
     AdminLayout: typeof import('./components/layout/AdminLayout.vue')['default']
+    AdminProductCreateDialog: typeof import('./components/admin/AdminProductCreateDialog.vue')['default']
     AppFooter: typeof import('./components/layout/AppFooter.vue')['default']
     AppHeader: typeof import('./components/layout/AppHeader.vue')['default']
+    BaseCard: typeof import('./components/common/BaseCard.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
+    ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
@@ -29,6 +33,7 @@ declare module 'vue' {
     ElForm: typeof import('element-plus/es')['ElForm']
     ElFormItem: typeof import('element-plus/es')['ElFormItem']
     ElIcon: typeof import('element-plus/es')['ElIcon']
+    ElImage: typeof import('element-plus/es')['ElImage']
     ElInput: typeof import('element-plus/es')['ElInput']
     ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
     ElLink: typeof import('element-plus/es')['ElLink']
@@ -54,7 +59,10 @@ declare module 'vue' {
     SecondhandCard: typeof import('./components/asset/SecondhandCard.vue')['default']
     ServiceCard: typeof import('./components/service/ServiceCard.vue')['default']
     ServiceIconPicker: typeof import('./components/admin/ServiceIconPicker.vue')['default']
+    UserDetailDialog: typeof import('./components/admin/UserDetailDialog.vue')['default']
+    UserEditDialog: typeof import('./components/admin/UserEditDialog.vue')['default']
     UserLayout: typeof import('./components/layout/UserLayout.vue')['default']
+    UserStatsCard: typeof import('./components/admin/UserStatsCard.vue')['default']
     UserSubpageHeader: typeof import('./components/user/UserSubpageHeader.vue')['default']
   }
   export interface GlobalDirectives {

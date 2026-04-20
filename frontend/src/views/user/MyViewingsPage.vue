@@ -28,16 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import UserSubpageHeader from '@/components/user/UserSubpageHeader.vue'
 import { getMyViewings } from '@/api/property'
 import { viewingStatusLabel, viewingStatusType } from '@/utils/status'
+import { useResourceList } from '@/composables/useResourceList'
 
-const loading = ref(false)
-const rows = ref<Record<string, unknown>[]>([])
-const total = ref(0)
-const page = ref(1)
-const size = ref(10)
+const { loading, rows, total, page, size, load } = useResourceList<Record<string, unknown>>((params) =>
+  getMyViewings(params),
+)
 
 function statusText(s: string) {
   return viewingStatusLabel(s)
@@ -47,19 +46,9 @@ function statusType(s: string) {
   return viewingStatusType(s)
 }
 
-async function load() {
-  loading.value = true
-  try {
-    const res = await getMyViewings({ page: page.value, size: size.value })
-    const data = res as { records?: unknown[]; list?: unknown[]; total?: number }
-    rows.value = (data.records || data.list || []) as Record<string, unknown>[]
-    total.value = data.total ?? 0
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
+onMounted(() => {
+  void load()
+})
 </script>
 
 <style scoped lang="scss">

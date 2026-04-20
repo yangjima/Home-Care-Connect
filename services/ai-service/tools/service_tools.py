@@ -12,16 +12,26 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 
-async def search_services(query: str, user_id: Optional[str] = None) -> str:
-    """
-    搜索社区服务
-    """
+async def search_services(
+    query: str,
+    user_id: Optional[str] = None,
+    filters: Optional[dict] = None,
+) -> str:
+    """搜索社区服务类型（按 router 抽取的 serviceType/keyword）。"""
+    filters = filters or {}
+    params: dict = {}
+    # service-type 后端用 keyword 过滤；优先使用 serviceType，其次 keyword
+    if filters.get("serviceType"):
+        params["keyword"] = filters["serviceType"]
+    elif filters.get("keyword"):
+        params["keyword"] = filters["keyword"]
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             base = settings.SERVICE_ORDER_URL.rstrip("/")
             response = await client.get(
                 f"{base}/service-types",
-                params={"keyword": query},
+                params=params,
                 headers=_build_headers(user_id),
             )
 
@@ -30,15 +40,15 @@ async def search_services(query: str, user_id: Optional[str] = None) -> str:
                 services = data.get("data", [])
 
                 if not services:
-                    return "暂无符合条件的社区服务。"
+                    return "EMPTY_RESULT: 当前没有符合用户条件的社区服务。"
 
                 return _format_services(services)
             else:
-                return _get_mock_services(query)
+                return "EMPTY_RESULT: 社区服务暂时不可用。"
 
     except Exception as e:
         logger.warning(f"服务搜索 API 调用失败: {e}")
-        return _get_mock_services(query)
+        return "EMPTY_RESULT: 社区服务暂时不可用。"
 
 
 async def create_service_order(
@@ -117,25 +127,3 @@ def _format_services(services: list) -> str:
     return "\n\n".join(lines)
 
 
-def _get_mock_services(query: str) -> str:
-    """返回模拟服务数据"""
-    return """我们提供以下热门社区服务：
-
-1. **日常家政保洁** 🧹
-   💵 价格: 80 元/小时 起
-   📝 专业家政人员，提供日常保洁、深度清洁、开荒保洁等服务
-
-2. **家电维修安装** 🔧
-   💵 价格: 100 元/次 起
-   📝 专业维修师傅，处理水电故障、家电安装调试
-
-3. **老人陪护服务** 👴
-   💵 价格: 200 元/天 起
-   📝 持证护理人员，提供日常陪护、健康监测、用药提醒
-
-4. **搬家运输服务** 📦
-   💵 价格: 面议
-   📝 包装、搬运、运输一条龙服务
-
----
-💡 点击「立即预约」可快速下单，或告诉我您的具体需求！"""

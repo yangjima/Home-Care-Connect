@@ -21,7 +21,7 @@
       </el-table>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑门店' : '新建门店'" width="520px" destroy-on-close @closed="resetForm">
+    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑门店' : '新建门店'" width="520px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="88px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="门店名称" maxlength="100" show-word-limit />
@@ -42,86 +42,62 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import { onMounted, ref } from 'vue'
+import type { FormRules } from 'element-plus'
+import { useAdminList } from '@/composables/useAdminList'
+import { useAdminForm } from '@/composables/useAdminForm'
 import { createStore, listStores, updateStore, type Store } from '@/api/stores'
 
-const loading = ref(false)
-const rows = ref<Store[]>([])
-
-const dialogVisible = ref(false)
-const editingId = ref<number | null>(null)
-const saving = ref(false)
-const formRef = ref<FormInstance>()
-const form = reactive({ name: '', address: '', phone: '' })
+const { loading, rows, load } = useAdminList<Store>(async () => {
+  try {
+    return (await listStores()) || []
+  } catch {
+    return []
+  }
+})
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入门店名称', trigger: 'blur' }],
   address: [{ required: true, message: '请输入地址', trigger: 'blur' }],
 }
 
-async function load() {
-  loading.value = true
-  try {
-    rows.value = await listStores()
-  } catch {
-    rows.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-function resetForm() {
-  editingId.value = null
-  form.name = ''
-  form.address = ''
-  form.phone = ''
-  formRef.value?.clearValidate()
-}
-
-function openCreate() {
-  resetForm()
-  dialogVisible.value = true
-}
-
-function openEdit(row: Store) {
-  editingId.value = row.id
-  form.name = row.name || ''
-  form.address = row.address || ''
-  form.phone = row.phone || ''
-  dialogVisible.value = true
-}
-
-async function submit() {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-  saving.value = true
-  try {
+const {
+  visible: dialogVisible,
+  loading: saving,
+  formRef,
+  form,
+  open: openCreate,
+  openWith,
+  submit,
+} = useAdminForm({
+  initial: () => ({ id: 0, name: '', address: '', phone: '' }),
+  onSuccess: () => load(),
+  onSubmit: async (f) => {
     const payload = {
-      name: form.name.trim(),
-      address: form.address.trim(),
-      phone: form.phone.trim() || undefined,
+      name: f.name.trim(),
+      address: f.address.trim(),
+      phone: f.phone.trim() || undefined,
     }
-    if (editingId.value != null) {
-      await updateStore(editingId.value, payload)
-      ElMessage.success('已保存')
+    if (f.id) {
+      await updateStore(f.id, payload)
     } else {
       await createStore(payload)
-      ElMessage.success('门店已创建')
     }
-    dialogVisible.value = false
-    await load()
-  } finally {
-    saving.value = false
-  }
+  },
+})
+
+function openEdit(row: Store) {
+  openWith({
+    id: row.id,
+    name: row.name || '',
+    address: row.address || '',
+    phone: row.phone || '',
+  })
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+})
 </script>
 
 <style scoped lang="scss">

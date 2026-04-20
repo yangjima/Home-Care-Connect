@@ -20,14 +20,32 @@ def _page_records(payload: dict) -> list:
     return []
 
 
-async def search_procurement_products(query: str, user_id: Optional[str] = None) -> str:
-    """搜索办公用品采购"""
+def _build_search_params(filters: Optional[dict]) -> dict:
+    """按 router 抽出的 filters 组装查询参数，仅在明确抽到时传给后端。"""
+    filters = filters or {}
+    params: dict = {"page": 1, "pageSize": 5}
+    if filters.get("keyword"):
+        params["keyword"] = filters["keyword"]
+    if filters.get("minPrice") is not None:
+        params["minPrice"] = filters["minPrice"]
+    if filters.get("maxPrice") is not None:
+        params["maxPrice"] = filters["maxPrice"]
+    return params
+
+
+async def search_procurement_products(
+    query: str,
+    user_id: Optional[str] = None,
+    filters: Optional[dict] = None,
+) -> str:
+    """搜索商城商品。"""
+    params = _build_search_params(filters)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             base = settings.ASSET_SERVICE_URL.rstrip("/")
             response = await client.get(
                 f"{base}/procurement-products",
-                params={"keyword": query, "page": 1, "pageSize": 5},
+                params=params,
                 headers=_build_headers(user_id),
             )
 
@@ -36,24 +54,29 @@ async def search_procurement_products(query: str, user_id: Optional[str] = None)
                 products = _page_records(data)
 
                 if not products:
-                    return "暂无符合条件的采购商品。"
+                    return "EMPTY_RESULT: 当前商城没有符合用户条件的商品。"
 
                 return _format_products(products)
 
     except Exception as e:
         logger.warning(f"采购商品搜索失败: {e}")
 
-    return _get_mock_procurement(query)
+    return "EMPTY_RESULT: 商城服务暂时不可用。"
 
 
-async def search_secondhand_items(query: str, user_id: Optional[str] = None) -> str:
-    """搜索二手物品"""
+async def search_secondhand_items(
+    query: str,
+    user_id: Optional[str] = None,
+    filters: Optional[dict] = None,
+) -> str:
+    """搜索二手物品。"""
+    params = _build_search_params(filters)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             base = settings.ASSET_SERVICE_URL.rstrip("/")
             response = await client.get(
                 f"{base}/secondhand-items",
-                params={"keyword": query, "page": 1, "pageSize": 5},
+                params=params,
                 headers=_build_headers(user_id),
             )
 
@@ -62,14 +85,14 @@ async def search_secondhand_items(query: str, user_id: Optional[str] = None) -> 
                 items = _page_records(data)
 
                 if not items:
-                    return "暂无符合条件的二手物品。"
+                    return "EMPTY_RESULT: 当前二手交易区没有符合用户条件的物品。"
 
                 return _format_secondhand(items)
 
     except Exception as e:
         logger.warning(f"二手物品搜索失败: {e}")
 
-    return _get_mock_secondhand(query)
+    return "EMPTY_RESULT: 二手服务暂时不可用。"
 
 
 async def create_procurement_order(
@@ -134,39 +157,3 @@ def _format_secondhand(items: list) -> str:
     return "\n\n".join(lines)
 
 
-def _get_mock_procurement(query: str) -> str:
-    return """办公用品采购目录：
-
-1. **打印复印设备**
-   💵 激光打印机: 1200 元/台 起
-   💵 复印机租赁: 300 元/月 起
-
-2. **办公桌椅**
-   💵 标准办公桌: 280 元/张
-   💵 人体工学椅: 450 元/把
-
-3. **文具耗材**
-   💵 A4 复印纸: 25 元/箱
-   💵 墨盒套装: 80 元/套
-
----
-💡 如需批量采购，可享折扣优惠！"""
-
-
-def _get_mock_secondhand(query: str) -> str:
-    return """二手物品交易广场：
-
-1. **办公家具转让** 🪑
-   💵 9成新办公桌: 150 元
-   💵 会议桌(1.8m): 300 元
-
-2. **家用电器** 📺
-   💵 55寸智能电视: 1200 元 (9成新)
-   💵 冰箱(双开门): 800 元 (8成新)
-
-3. **电子设备** 💻
-   💵 笔记本电脑: 2500 元 (95新)
-   💵 台式机套装: 800 元
-
----
-💡 所有二手物品均经过审核，信息真实可靠！"""

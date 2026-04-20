@@ -1,178 +1,341 @@
-# 居服通（Home Care Connect）— 项目说明
+# 居服通 Home Care Connect
 
-本文档描述 **Home-Care-Connect** 仓库的整体定位、技术架构、目录结构，以及 **角色权限（RBAC）** 与 **系统后台 / 个人中心** 等近期实现要点。详细设计见仓库内 `docs/设计文档.md`，部署见 `docs/部署指南.md`。
+> 以门店/公寓为锚点的本地社区综合服务平台。一站式承接**房源租售、上门服务、本地商城、跳蚤市场**四大业务，并内置基于 LangGraph 的**多智能体 AI 助手**，用语义理解替代传统关键词匹配，帮用户把"我想租两千左右的房""我要买可乐"直接转化为精准检索与页面跳转。
 
----
-
-## 1. 项目是什么
-
-**居服通（Home Care Connect）** 是一个以公寓/门店为节点的本地化平台，MVP 阶段聚焦：
-
-- **房源**：展示、预约看房、房东/商家上架维护（与门店场景结合）。
-- **社区服务**：服务类型、下单、订单状态流转（保洁、维修等）。
-- **资产 / 本地商城**：采购商品（本地商城）、二手跳蚤市场。
-- **AI 助手**：对话入口，意图路由到房源 / 服务 / 采购等能力（见设计文档 AI 部分）。
-
-技术形态为 **微服务 + 统一网关 + Vue 3 单页应用**，数据层 MySQL，缓存 Redis，对象存储 MinIO，可选 Nacos 做注册与配置。
+- **后端**：Spring Boot 3 + Spring Cloud Gateway + Java 21 微服务 · FastAPI + LangGraph AI 服务
+- **前端**：Vue 3 + TypeScript + Vite + Element Plus + Pinia
+- **中间件**：MySQL · Redis · MinIO · Nacos（可选）
+- **一键部署**：Docker Compose + Makefile
 
 ---
 
-## 2. 系统架构一览
+## 目录
+
+- [业务能力一览](#业务能力一览)
+- [用户角色与权限](#用户角色与权限)
+- [技术架构](#技术架构)
+- [AI 助手的设计亮点](#ai-助手的设计亮点)
+- [目录结构](#目录结构)
+- [快速开始](#快速开始)
+- [本地开发](#本地开发)
+- [默认账号](#默认账号)
+- [API 路由约定](#api-路由约定)
+- [常用命令](#常用命令)
+
+---
+
+## 业务能力一览
+
+### 1. 房源（租售 + 看房）
+
+- 房源多条件检索：关键词、价格区间、行政区、户型、朝向、装修
+- 房源上下架、编辑、图片上传（MinIO）
+- 在线预约看房，全流程状态跟踪（待确认 / 已确认 / 已完成 / 已取消）
+- 「我的房源」（房东视角）与「我的看房」（租客视角）双入口
+- 平台管理员可置顶/推荐，商家仅能管理自己发布的房源
+
+### 2. 社区上门服务
+
+- 服务类型管理：保洁、维修、开锁、陪护、搬家、做饭、家电清洗……
+- 服务人员档案（技能、评分、排班）
+- 下单 → 派单 → 上门 → 完成 → 评价全链路
+- 订单按角色过滤：用户只看自己；门店长/管理员看全局
+- 评价模块：星级 + 文字 + 追评
+
+### 3. 本地商城（采购）
+
+- 商品管理、库存管理（按门店维度）
+- 商家（supplier）自助上架，平台审核后上线
+- 按关键词、价格区间检索
+- 下单与订单查询
+
+### 4. 跳蚤市场（二手闲置）
+
+- C2C 发布二手物品：成色、图片、描述、地点
+- 「我的发布」管理、下架
+- 平台审核机制（上架审批页）
+- 公开浏览 + 详情页，登录后才可发布或联系卖家
+
+### 5. AI 智能助手 ⭐
+
+AI 助手不是"聊天机器人"，而是**业务路由 + 结构化检索**的自然语言入口：
+
+- 🧠 **纯语义意图识别**（无关键词列表）：
+  - "我要买可乐" → 跳本地商城，搜索"可乐"
+  - "租两千左右的房" → 跳房源列表，`minPrice=1500 & maxPrice=2500`
+  - "家里灯不亮了" → 跳服务列表，类型=维修
+  - "有没有二手冰箱" → 跳跳蚤市场，关键词=冰箱
+- 📦 **结构化槽位抽取**：价格、户型、片区、服务类型、商品品类等自动入参
+- 🚦 **严格检索约束**：模型只能基于平台实际数据推荐，空结果时如实告知并建议放宽条件——**绝不编造"北京上海的房源"之类的平台外数据**
+- 🌊 **流式对话**：HTTP + WebSocket 双通道，逐 token 推送
+- 🗂️ **会话持久化**：Redis / 内存两种 checkpoint 后端
+- 🔀 **一键跳转**：意图识别完成后返回 `redirect` URL，前端可直接跳对应列表/详情并预填筛选
+
+### 6. 多租户门店
+
+- 门店（store）作为组织维度，承载员工、房源、商品、订单
+- 门店长（store_manager）管理自己门店下的全部资源
+- 商家（supplier）挂靠在门店下，独立管理自己的发布
+
+### 7. 数据看板
+
+- 管理员首页看板：房源数、订单数、GMV、服务完成率、用户活跃等
+- 按角色差异化展示（平台 vs 门店 vs 商家）
+
+---
+
+## 用户角色与权限
+
+| 角色             | 职责                     | 可访问后台页面                                   |
+| ---------------- | ------------------------ | ------------------------------------------------ |
+| `admin`          | 平台超管                 | 全部                                             |
+| `store_manager`  | 门店长（视同平台管理员） | 全部                                             |
+| `supplier`       | 商家 / 房东              | 数据看板、房源管理、商品管理                     |
+| `tenant` / `user`| 普通用户                 | 无后台，仅个人中心（订单、看房、发布、资料）     |
+
+- 公开注册**仅能**得到 `user` 角色；`supplier` 与管理员角色由平台管理员后台指派（`PATCH /api/user/users/{id}/role`）
+- 所有公开浏览页（房源、服务、商品、二手）**仅对 GET 开放匿名访问**，任意写操作必须登录
+- JWT 验签**只在网关**完成，下游服务通过 `X-User-Id / X-User-Role / X-User-Store-Id` 请求头获取身份
+
+---
+
+## 技术架构
 
 ```
-用户浏览器
-    → API Gateway（JWT 校验，注入 X-User-Id / X-User-Role）
-        → user-service（用户、JWT、角色）
-        → property-service（房源、看房预约）
-        → service-order-service（服务类型、订单、评价、人员展示）
-        → asset-service（采购商品、二手物品）
-        → ai-service（对话与 Agent，按需）
+┌─────────────┐
+│  Browser    │  Vue 3 + Element Plus
+└──────┬──────┘
+       │ /api/*  /minio/*
+       ▼
+┌─────────────────────────────────────┐
+│  Spring Cloud Gateway (:8080)       │  ← JWT 鉴权 · 路由转发 · CORS
+└─┬────────┬────────┬────────┬──────┬─┘
+  │        │        │        │      │
+  ▼        ▼        ▼        ▼      ▼
+┌─────┐ ┌──────┐ ┌──────┐ ┌─────┐ ┌────────────┐
+│user │ │prop. │ │ser.  │ │asset│ │ai-service  │
+│8081 │ │8082  │ │order │ │8083 │ │(FastAPI    │
+│     │ │      │ │8082  │ │     │ │ +LangGraph)│
+└──┬──┘ └──┬───┘ └──┬───┘ └──┬──┘ └─────┬──────┘
+   │       │        │        │          │
+   └───────┴────┬───┴────────┘          │ 工具调用
+                ▼                        │
+         ┌──────────────┐                │
+         │ MySQL / Redis│ ◄──────────────┘
+         │ / MinIO      │
+         └──────────────┘
 ```
 
-| 组件 | 技术 | 默认职责 |
-|------|------|-----------|
-| API Gateway | Spring Cloud Gateway | 路由、JWT、白名单（公开 GET 等） |
-| User Service | Spring Boot | 注册登录、用户信息、用户列表与角色维护（管理端） |
-| Property Service | Spring Boot | 房源 CRUD、媒体上传、看房预约与状态 |
-| Service Order Service | Spring Boot | 服务订单、确认/完成/支付等流程接口 |
-| Asset Service | Spring Boot | 采购商品、二手发布与列表 |
-| AI Service | Langgraph + FastAPI | 多 Agent 对话 |
-| Frontend | Vue 3 + Vite + Pinia + Element Plus | 用户端 + 系统后台 |
+### 路由映射（网关）
 
-基础设施常见组合：**MySQL、Redis、MinIO**；本地/容器编排可参考 `infrastructure/docker/docker-compose.yml`。
+| 前缀                | 下游服务              | StripPrefix |
+| ------------------- | --------------------- | ----------- |
+| `/api/user/**`      | user-service          | 2           |
+| `/api/property/**`  | property-service      | 2           |
+| `/api/service/**`   | service-order-service | 2           |
+| `/api/asset/**`     | asset-service         | 2           |
+| `/api/ai/**`        | ai-service            | 0（保留前缀）|
 
----
+### 关键设计
 
-## 3. 仓库目录（高层）
-
-| 路径 | 说明 |
-|------|------|
-| `services/gateway` | 网关：JWT 解析，向下游传递用户头 |
-| `services/user-service` | 用户与认证 |
-| `services/property-service` | 房源与看房 |
-| `services/service-order-service` | 服务订单与相关接口 |
-| `services/asset-service` | 采购与二手 |
-| `services/ai-service` | AI 服务 |
-| `frontend` | Vue 3 前端工程 |
-| `infrastructure` | Docker、MySQL 初始化脚本等 |
-| `docs` | 设计文档、部署指南等 |
-| `prototypes` | HTML 原型（含店长后台、用户个人页等） |
+- **鉴权唯一入口**：JWT 只在网关校验，下游服务无条件信任请求头，杜绝身份伪造与漏洞面
+- **资源级 RBAC**：在每个服务的 Controller/Service 层做资源归属校验（如"商家只能改自己的房源"），与网关角色白名单解耦
+- **AI 服务独立**：FastAPI 而非 Spring，换用 LangGraph 专业编排多智能体；通过 HTTP 回调 Java 服务做真实检索
+- **Nacos 可选**：配置中心/注册中心均为 `optional:` 导入，纯本地开发可直接起
 
 ---
 
-## 4. 前端应用结构
+## AI 助手的设计亮点
 
-- **用户端**：首页、房源列表/详情、服务列表/下单、本地商城、跳蚤市场、AI、登录注册等。
-- **个人中心**（`/user/profile`）：参考原型 `prototypes/group1-user-pages/03-profile.html`，含渐变头图、快捷入口、常用功能；资料编辑与改密码在弹窗中完成。
-- **用户子站**（`UserLayout`，`/user/*`）：侧栏含个人中心、我的订单、我的看房、跳蚤市场发布；**商家/管理员**额外显示「我的房源」「系统后台」入口。
-- **系统后台**（`/admin/*`）：采用统一左侧菜单布局，包含：
-  - 数据看板 `/admin/dashboard`
-  - 房源管理 `/admin/properties`
-  - 商品管理 `/admin/products`
-  - 添加商品 `/admin/products/new`
-  - 订单管理 `/admin/orders`
-  - 服务管理 `/admin/services`
-  - 添加服务 `/admin/services/new`
-  - 员工管理 `/admin/staff`
+居服通的 AI 助手**不是提示词工程堆出来的聊天窗**，而是一套可组合的多智能体图。
 
-路由守卫：需登录；进入 `/admin` 需具备后台角色；**商家**仅允许「数据看板 + 房源管理」，访问订单/服务/员工子路由会被重定向到看板。
+### 图结构
 
-前端角色常量：`frontend/src/constants/roles.ts`。  
-新增/相关 API 示例：`frontend/src/api/users.ts`（用户列表、改角色）、`property.ts`（上架/下架/推荐）、`asset.ts`（采购商品维护）、`service.ts`（订单列表 `status` 为字符串）。
+```
+[START] ──► router ──┬─► property_agent ──┐
+                     ├─► service_agent ────┤
+                     ├─► procurement_agent ┼─► response_agent ──► [END]
+                     └─► (general) ────────┘
+```
 
----
+### router：从关键词匹配到 LLM 语义理解
 
-## 5. 角色与权限（RBAC）
+传统做法是写一堆关键词列表去 `in` 匹配——"我要买可乐"因为词表里没有"可乐"就识别不出购物意图。居服通的 router 用 **Pydantic + `with_structured_output`** 让 LLM 直接输出结构化决策：
 
-角色与数据库表 **`sys_user.role`**（MySQL ENUM）及 JWT 中的 **`role` 声明**一致，避免与现有初始化数据冲突。
+```python
+class RouterOutput(BaseModel):
+    intent: Literal["property", "service", "procurement", "general"]
+    confidence: float
+    sub_action: Literal["list", "detail", "book", "my"]
+    filters: RouterFilters  # keyword / minPrice / maxPrice / district /
+                            # bedrooms / serviceType / category / ...
+```
 
-| 业务称呼 | `role` 字段值 | 说明 |
-|----------|----------------|------|
-| 超级管理员 | `admin` | 全平台管理权限（后台全菜单、用户与角色、订单处理、推荐房源、采购商品维护等） |
-| 店长 | `store_manager` | 与 `admin` 在权限模型上等价（平台侧统一称「平台管理员」） |
-| 商家 | `supplier` | 可发布/维护**自有房源**、维护**本地商城采购商品**；后台仅开放看板 + 房源；其余能力与租户一致走用户端 |
-| 普通用户 | `tenant` / `user` | 浏览与预约、下单、发布二手等；不能管理他人订单/全站用户；不能写采购商品 |
+Prompt 里**不**给关键词列表，改为描述**业务边界 + 判断原则 + few-shot 边界场景**，让 LLM 真的做语义理解。关键词兜底**仅在 LLM 调用异常时**启用，作为降级路径。
 
-**注册**：公开注册仅允许普通角色（`tenant` / `user`），不可自选 `admin` 等特权角色。  
-**赋权**：平台管理员通过 **`PATCH /api/user/users/{id}/role`** 修改他人角色（需携带 JWT，网关注入头）。
+### Agent：硬约束 prompt + 结构化检索
 
-### 5.1 网关与下游
+下游 agent 的 system prompt 有两条铁律：
 
-- 网关校验 JWT 后向下游设置：**`X-User-Id`**、**`X-Username`**、**`X-User-Role`**。
-- 各业务服务从请求头读取当前操作者，做资源级校验（禁止仅靠「默认 userId=1」冒充登录）。
+1. **只能基于平台真实检索结果回复**——严禁编造不在结果里的房源/商品
+2. 检索返回 `EMPTY_RESULT:` 时**如实告知**并建议放宽条件，不推荐不相关内容凑数
 
-### 5.2 各服务要点（实现摘要）
+工具层接受 router 抽出的 `filters`，按结构化字段（`keyword / minPrice / maxPrice / district / category`）调各业务服务的列表 API，而不是把整句用户输入塞进 `keyword`——这样"租两千左右"不会因为匹配不到"租两千"字面量而全库未命中。
 
-**property-service**
+### 跳转联动
 
-- 创建房源：仅 `admin`、`store_manager`、`supplier`。
-- 更新/删除/上架/下架：房源 **owner** 或平台管理员。
-- **推荐房源**：仅平台管理员。
-- 看房：列表按角色过滤（管理员看全量；商家需带 `propertyId` 且为房源 owner；普通用户仅看自己的预约）；详情与状态变更按「预约人 / 房东 / 管理员」组合校验。
+AI 返回结果中带 `redirect` 字段，前端根据它直接跳转到对应列表页并预填筛选参数，例如：
 
-**service-order-service**
-
-- 订单列表：普通用户强制只看本人；管理员与商家可看全量列表（商家侧后续可按门店细化）。
-- 订单详情 / 支付 / 取消：本人或管理员；**确认、完成、删除订单**仅平台管理员。
-
-**asset-service**
-
-- 采购商品 **POST/PUT/DELETE/PATCH 库存**：仅 `admin`、`store_manager`、`supplier`。  
-- 二手发布等仍面向已登录用户（与普通用户能力一致）。
-
-**user-service**
-
-- `GET /users`、用户状态变更、`PATCH /users/{id}/role`：**平台管理员**。
-- `GET/PUT /users/{id}`：本人或平台管理员。
+- "长安区三千以下的一室一厅" → `/properties?maxPrice=3000&district=长安区&bedrooms=1`
+- "有没有二手冰箱"           → `/secondhand?keyword=冰箱`
 
 ---
 
-## 6. 初始化与测试账号
+## 目录结构
 
-MySQL 初始化脚本：`infrastructure/mysql/init.sql`（含门店、用户、房源样例等）。
-
-示例用户（密码与脚本中 BCrypt 一致，常见为 **`123456`**，请以你本地 `docs/部署指南.md` 或脚本注释为准）：
-
-| 用户名 | 角色 | 用途 |
-|--------|------|------|
-| `admin` | 超级管理员 | 全后台 + 用户角色分配 |
-| `manager1` / `manager2` | 店长 | 与 admin 同级后台能力 |
-| `supplier1` | 商家 | 房源 + 采购商品 + 用户端 |
-| `user1` | 普通用户 | 租户端行为验证 |
-
----
-
-## 7. 本地开发提示
-
-- 前端：`frontend` 目录执行 `npm install`、`npm run dev` / `npm run build`；API 基地址见 `VITE_API_BASE_URL`（默认常指向 `/api` 经网关代理）。
-- 后端：各 `services/*` 为独立 Maven 模块；需本机 JDK、Maven（或 IDE）构建。
-- 网关白名单包含登录注册等路径；部分 **GET** 房源/服务/商品接口可无 JWT，写操作需 Token。
-
-### 7.1 登录密码“密文传输”（可选）
-
-默认情况下，前端登录请求会发送明文密码（**仍建议使用 HTTPS/TLS** 来保护传输）。如果你希望在应用层将密码以密文传输，可以启用 **RSA-OAEP(SHA-256)**：
-
-- **前端**：设置环境变量 `VITE_LOGIN_RSA_PUBLIC_KEY`（PEM 格式公钥，`-----BEGIN PUBLIC KEY-----` ...）。设置后，`POST /api/user/auth/login` 的 `password` 会发送为 `rsa_oaep_sha256:<base64>`。
-- **后端（user-service）**：设置环境变量 `LOGIN_RSA_PRIVATE_KEY`（PKCS#8 PEM 私钥，`-----BEGIN PRIVATE KEY-----` ...）。后端会在检测到前缀 `rsa_oaep_sha256:` 时自动解密后再进行密码校验；未带前缀则按旧逻辑兼容处理。
-
----
-
-## 8. 相关文档与原型
-
-| 资源 | 路径 |
-|------|------|
-| 详细设计 | `docs/设计文档.md` |
-| 系统后台联调清单 | `docs/系统后台联调清单.md` |
-| 部署说明 | `docs/部署指南.md` |
-| 用户个人页原型 | `prototypes/group1-user-pages/03-profile.html` |
-| 店长后台原型 | `prototypes/group1-user-pages/01-dashboard.html` 等 |
+```
+Home-Care-Connect/
+├─ frontend/                          Vue 3 SPA
+│  ├─ src/
+│  │  ├─ api/         # 各业务的 axios 封装
+│  │  ├─ stores/      # Pinia（auth / property / ai / ...）
+│  │  ├─ composables/ # useResourceList, useAdminForm
+│  │  ├─ views/
+│  │  │  ├─ home/ auth/ property/ service/ asset/ ai/
+│  │  │  ├─ user/     # 个人中心
+│  │  │  └─ admin/    # 后台
+│  │  └─ router/
+│  └─ vite.config.ts
+├─ services/
+│  ├─ gateway/                  Spring Cloud Gateway + JwtAuthFilter
+│  ├─ user-service/             注册、登录、用户、门店、验证码
+│  ├─ property-service/         房源、看房预约
+│  ├─ service-order-service/    服务类型、服务人员、订单、评价
+│  ├─ asset-service/            商城商品、二手物品
+│  └─ ai-service/               FastAPI + LangGraph
+│     ├─ agents/     # router / property / service / procurement / response
+│     ├─ tools/      # property_tools / service_tools / procurement_tools
+│     ├─ graph/      # chat_graph, state, checkpoint
+│     └─ prompts/
+├─ infrastructure/
+│  ├─ docker/docker-compose.yml   # 一站式编排
+│  ├─ mysql/init.sql              # 初始库、种子数据
+│  ├─ mysql/migrations/           # 增量迁移
+│  └─ nacos/
+├─ Makefile
+└─ CLAUDE.md                      为 AI 协作准备的工程说明
+```
 
 ---
 
-## 9. 版本说明（文档维护）
+## 快速开始
 
-本 `read.md` 随仓库演进可继续补充：**环境变量清单、OpenAPI 入口、各服务端口表、与 Nacos 配置键对照** 等。若与 `docs/设计文档.md` 冲突，以设计文档与代码为准，并建议将差异记在本节。
+### 前置条件
+
+- Docker Desktop 24+（含 Docker Compose v2）
+- 如需本地开发：Node 18+、JDK 21、Python 3.11、Maven 3.9+
+
+### 一键启动（Docker）
+
+```bash
+# 1. 启动全部服务（构建 + 启动）
+make up
+
+# 2. 查看状态
+make ps
+
+# 3. 查看网关日志
+make logs-svc SVC=gateway
+```
+
+启动完成后：
+
+- 前端：http://localhost （或 http://localhost:5173 本地 dev 时）
+- 网关：http://localhost:8080
+- MinIO 控制台：http://localhost:9001
+- AI 服务：http://localhost:8000
+
+### 仅启动基础设施 / 仅启动服务
+
+```bash
+make infra       # mysql + redis + minio + nacos
+make services    # 网关 + 各业务服务 + 前端
+```
 
 ---
 
-*文档生成说明：涵盖当前仓库内微服务划分、前端「居服通」用户端与店长后台、以及基于 `sys_user.role` 的 RBAC 与网关透传头约定。*
+## 本地开发
+
+### 前端（`frontend/`）
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173，/api 自动代理到网关
+npm run type-check
+npm run test         # Vitest
+npm run build
+```
+
+可选环境变量：
+
+- `VITE_DEV_HTTPS=true` 启用本地 HTTPS（`@vitejs/plugin-basic-ssl`）
+- `VITE_LOGIN_RSA_PUBLIC_KEY=<PEM>` 启用登录密码 RSA-OAEP 加密（需与后端 `LOGIN_RSA_PRIVATE_KEY` 配对）
+
+### Java 服务（`services/`）
+
+每个模块都支持 `application-local.yml` 本地覆盖（已 gitignore）：
+
+```bash
+cd services
+
+# 单模块构建（含依赖）
+mvn -pl user-service -am package
+
+# 单模块跑测试
+mvn -pl user-service test
+
+# 单测试类
+mvn -pl user-service -Dtest=JwtAuthFilterTest test
+```
+
+### AI 服务（`services/ai-service/`）
+
+```bash
+cd services/ai-service
+pip install -r requirements.txt
+
+export DASHSCOPE_API_KEY=sk-xxx   # 阿里云百炼
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+pytest                            # 跑 router / chat_graph 等单元测试
+```
+---
+
+## API 路由约定
+
+- 所有业务走网关 `/api/<service>/**`，`StripPrefix=2`；下游 Controller 感知不到前缀
+- AI 路由 `StripPrefix=0`，FastAPI 路径自身保留 `/api/ai/...`
+- 媒体访问：`/minio/<bucket>/<object>`（容器/Vite 都通过代理回源 MinIO）
+- 网关白名单：登录 / 注册 / 验证码 / 健康检查 / 公开的 **GET** 列表（房源、服务、商品、二手）+ AI 入口
+- 写操作全部需 JWT
+
+---
+
+## 常用命令
+
+```bash
+make up                         # 构建 + 启动全部
+make down                       # 停止全部
+make ps                         # 服务状态
+make logs                       # 跟踪所有日志
+make logs-svc SVC=gateway       # 跟踪单个服务
+make clean                      # 停止 + 删除数据卷（谨慎）
+make frontend-build             # 前端构建（本地，不走 Docker）
+```
+
+---
+
+## 许可证
+
+MIT。详见 [LICENSE](./LICENSE)。

@@ -11,7 +11,7 @@ ai:
   # 阿里云百炼 DashScope
   dashscope:
     api-key: ${DASHSCOPE_API_KEY:}
-    model: qwen-plus
+    model: Qwen/Qwen3.5-397B-A17B
     # 模型调用超时（秒）
     timeout: 30
     # 流式输出最大token

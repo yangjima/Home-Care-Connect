@@ -25,7 +25,7 @@ class Settings:
     DASHSCOPE_BASE_URL: str = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
     # LLM 模型配置
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen-plus")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "Qwen/Qwen3.5-397B-A17B")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2000"))
 

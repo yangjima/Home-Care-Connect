@@ -141,6 +141,8 @@ async function onMobileLogout() {
   z-index: 100;
   background: var(--color-bg-white);
   box-shadow: var(--shadow-light);
+  /* Mobile safe-area: avoid sticky header jitter/overlap under status bar */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .header-inner {

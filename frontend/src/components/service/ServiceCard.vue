@@ -1,5 +1,5 @@
 <template>
-  <div class="service-card">
+  <BaseCard class="service-card">
     <div class="service-icon">{{ service.icon || '🛠️' }}</div>
     <h3>{{ service.name }}</h3>
     <p class="service-desc">{{ service.description }}</p>
@@ -12,27 +12,22 @@
         预约
       </el-button>
     </div>
-  </div>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
 import type { ServiceType } from '@/types'
+import BaseCard from '@/components/common/BaseCard.vue'
 
 defineProps<{ service: Partial<ServiceType> }>()
 </script>
 
 <style scoped lang="scss">
 .service-card {
-  background: var(--color-bg-white);
-  border-radius: var(--border-radius-large);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-light);
-  transition: transform 0.2s, box-shadow 0.2s;
   text-align: center;
 
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-base);
+  :deep(.base-card__body) {
+    padding: var(--spacing-lg);
   }
 
   .service-icon {

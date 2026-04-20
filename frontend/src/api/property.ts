@@ -1,8 +1,9 @@
 /**
  * 房源 API
  */
-import { get, post, put, del } from '@/utils/request'
+import { get, post, put } from '@/utils/request'
 import { toOptionalPageQuery, toPageQuery } from '@/api/pagination'
+import { createResourceApi } from '@/api/resource'
 import type { PageParams, PageResult } from '@/types'
 
 export type PropertyListSort =
@@ -11,6 +12,8 @@ export type PropertyListSort =
   | 'price_desc'
   | 'newest'
   | 'views'
+
+const propertyApi = createResourceApi<PageParams>('/property/properties')
 
 /** 与设计文档 GET /properties 查询参数一致 */
 export function getPropertyList(
@@ -39,10 +42,8 @@ export function getPropertyList(
   })
 }
 
-// 房源详情
-export function getPropertyDetail(id: number) {
-  return get<object>(`/property/properties/${id}`)
-}
+export const getPropertyDetail = propertyApi.detail
+export const deletePropertyById = propertyApi.remove
 
 // 创建看房预约
 export function createViewing(data: {
@@ -58,8 +59,7 @@ export function getMyViewings(params?: PageParams) {
   return get<PageResult<object>>('/property/viewings', toOptionalPageQuery(params))
 }
 
-// 创建房源
-export function createProperty(data: {
+type PropertyData = {
   title: string
   description?: string
   propertyType: string
@@ -75,26 +75,13 @@ export function createProperty(data: {
   coverImage?: string
   /** 超级管理员指定房源所属门店 */
   storeId?: number
-}) {
+}
+
+export function createProperty(data: PropertyData) {
   return post<object>('/property/properties', data)
 }
 
-// 更新房源
-export function updateProperty(id: number, data: {
-  title: string
-  description?: string
-  propertyType: string
-  rentPrice: number
-  address: string
-  area: number
-  layout?: string
-  floor?: number
-  totalFloor?: number
-  images?: string[]
-  videos?: string[]
-  coverImage?: string
-  storeId?: number
-}) {
+export function updateProperty(id: number, data: PropertyData) {
   return put<object>(`/property/properties/${id}`, data)
 }
 
@@ -109,26 +96,10 @@ export function uploadPropertyMedia(file: File) {
   )
 }
 
-// 删除房源
-export function deletePropertyById(id: number) {
-  return del(`/property/properties/${id}`)
-}
-
-export function publishProperty(id: number) {
-  return post<object>(`/property/properties/${id}/publish`)
-}
-
-export function approvePropertyListing(id: number) {
-  return post<object>(`/property/properties/${id}/approve-listing`)
-}
-
-export function rejectPropertyListing(id: number) {
-  return post<object>(`/property/properties/${id}/reject-listing`)
-}
-
-export function offlineProperty(id: number) {
-  return post<object>(`/property/properties/${id}/offline`)
-}
+export const publishProperty = (id: number) => propertyApi.action(id, 'publish')
+export const approvePropertyListing = (id: number) => propertyApi.action(id, 'approve-listing')
+export const rejectPropertyListing = (id: number) => propertyApi.action(id, 'reject-listing')
+export const offlineProperty = (id: number) => propertyApi.action(id, 'offline')
 
 export function recommendProperty(id: number, recommended: boolean) {
   return post<object>(`/property/properties/${id}/recommend`, {}, { params: { recommended } })

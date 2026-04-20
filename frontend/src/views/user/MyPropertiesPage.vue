@@ -80,12 +80,24 @@ import {
 } from '@/api/property'
 import { useAuthStore } from '@/stores/auth'
 import { propertyStatusClass, propertyStatusLabel, toPropertyStatusKey } from '@/utils/status'
+import { useResourceList } from '@/composables/useResourceList'
 
-const loading = ref(false)
-const properties = ref<Property[]>([])
-const page = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const {
+  loading,
+  rows: properties,
+  total,
+  page,
+  size: pageSize,
+  load: fetchMyProperties,
+} = useResourceList<Property>(
+  async (params) => {
+    const ownerId = authStore.userInfo?.id
+    if (!ownerId) return { records: [], total: 0 }
+    const result = await getMyProperties({ ...params, ownerId })
+    const records = (result.records ?? result.list ?? []) as unknown[]
+    return { records: records.map((r) => normalizeProperty(r as Record<string, unknown>)), total: result.total ?? 0 }
+  },
+)
 
 const showPublishDialog = ref(false)
 const editingId = ref<number | null>(null)
@@ -132,23 +144,6 @@ function normalizeProperty(item: any): Property {
     videos: item.videos || [],
     coverImage: item.coverImage || item.images?.[0] || '',
     status: (item.status || 'pending') as any,
-  }
-}
-
-async function fetchMyProperties() {
-  if (!authStore.userInfo?.id) return
-  loading.value = true
-  try {
-    const result = await getMyProperties({
-      page: page.value,
-      size: pageSize.value,
-      ownerId: authStore.userInfo.id,
-    })
-    const records = (result.records ?? result.list ?? []) as any[]
-    properties.value = records.map(normalizeProperty)
-    total.value = Number(result.total || 0)
-  } finally {
-    loading.value = false
   }
 }
 

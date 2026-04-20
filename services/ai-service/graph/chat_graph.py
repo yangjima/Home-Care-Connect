@@ -84,11 +84,15 @@ async def router_node(state: ChatState) -> ChatState:
     user_message = messages[-1].content
     user_id = state.get("user_id")
 
-    route = await route_query(user_message, user_id)
+    decision = await route_query(user_message, user_id)
+    route = decision.get("intent", "general")
 
     return {
         **state,
         "route": route,
+        "confidence": float(decision.get("confidence", 0.5)),
+        "sub_action": decision.get("sub_action", "list"),
+        "filters": decision.get("filters", {}) or {},
         "query": user_message,
         "context": {},
     }

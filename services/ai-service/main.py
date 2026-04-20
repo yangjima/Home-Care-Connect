@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from graph.chat_graph import create_chat_graph, ChatState
 from agents.router import route_query
+from agents.redirect import build_redirect
 from config import settings
 from langchain_core.messages import HumanMessage
 
@@ -81,15 +82,6 @@ async def health_check():
     return {"status": "ok", "service": "ai-service"}
 
 
-def _resolve_redirect(intent: str) -> str | None:
-    mapping = {
-        "property": "/properties",
-        "service": "/services",
-        "procurement": "/purchase",
-    }
-    return mapping.get(intent)
-
-
 async def _invoke_chat_graph(message: str, session_id: str, user_id=None) -> dict:
     graph = create_chat_graph()
     result = await graph.ainvoke(
@@ -101,6 +93,9 @@ async def _invoke_chat_graph(message: str, session_id: str, user_id=None) -> dic
         config={"configurable": {"thread_id": session_id}},
     )
     intent = result.get("route", "general")
+    confidence = float(result.get("confidence", 0.5) or 0.5)
+    sub_action = str(result.get("sub_action", "list") or "list")
+    filters = result.get("filters", {}) or {}
     reply = result.get("response", "")
     if not reply:
         last_msg = result["messages"][-1]
@@ -109,11 +104,16 @@ async def _invoke_chat_graph(message: str, session_id: str, user_id=None) -> dic
     else:
         reply = coerce_llm_content(reply)
 
+    redirect = build_redirect(intent=intent, sub_action=sub_action, filters=filters)
+
     return {
         "intent": intent,
+        "confidence": confidence,
+        "sub_action": sub_action,
+        "filters": filters,
         "reply": reply,
         "data": result.get("context", {}),
-        "redirect": _resolve_redirect(intent),
+        "redirect": redirect,
         "session_id": session_id,
     }
 
@@ -158,39 +158,66 @@ async def websocket_chat(websocket: WebSocket, session_id: str = "default"):
             user_message = data.get("message", "")
             user_id = data.get("user_id")
 
-            await manager.send_event(session_id, {
-                "type": "start",
-                "message": user_message,
-            })
+            # 先跑完整图拿到结构化结果，再按 token 流式吐出（对齐设计文档事件模型）
+            result = await graph.ainvoke(
+                {
+                    "messages": [HumanMessage(content=user_message)],
+                    "session_id": session_id,
+                    "user_id": user_id,
+                },
+                config={"configurable": {"thread_id": session_id}},
+            )
 
-            # 流式处理
-            accumulated_response = ""
+            intent = result.get("route", "general")
+            confidence = float(result.get("confidence", 0.5) or 0.5)
+            sub_action = str(result.get("sub_action", "list") or "list")
+            filters = result.get("filters", {}) or {}
+            redirect = build_redirect(intent=intent, sub_action=sub_action, filters=filters)
 
-            # 第一步：路由
-            route = await route_query(user_message, user_id)
-            await manager.send_event(session_id, {
-                "type": "route",
-                "agent": route,
-            })
+            response_content = result.get("response", "")
+            if not response_content:
+                last_msg = result["messages"][-1]
+                if hasattr(last_msg, "content"):
+                    response_content = coerce_llm_content(last_msg.content)
+                elif isinstance(last_msg, (tuple, list)) and len(last_msg) >= 2:
+                    response_content = coerce_llm_content(last_msg[1])
+                else:
+                    response_content = str(last_msg)
+            else:
+                response_content = coerce_llm_content(response_content)
 
-            # 调用图
-            async for chunk in stream_graph_response(graph, user_message, session_id, user_id):
-                if chunk["type"] == "token":
-                    accumulated_response += chunk["content"]
-                    await manager.send_event(session_id, {
-                        "type": "token",
-                        "content": chunk["content"],
-                    })
-                elif chunk["type"] == "agent":
-                    await manager.send_event(session_id, {
-                        "type": "agent",
-                        "agent": chunk["agent"],
-                    })
+            await manager.send_event(session_id, {"type": "start", "message": user_message})
 
-            await manager.send_event(session_id, {
-                "type": "end",
-                "content": accumulated_response,
-            })
+            accumulated = ""
+            for char in response_content:
+                accumulated += char
+                await manager.send_event(session_id, {"type": "token", "content": char})
+
+            await manager.send_event(
+                session_id,
+                {
+                    "type": "intent",
+                    "data": {
+                        "intent": intent,
+                        "confidence": confidence,
+                        "sub_action": sub_action,
+                        "filters": filters,
+                    },
+                },
+            )
+
+            await manager.send_event(
+                session_id,
+                {
+                    "type": "result",
+                    "data": {
+                        "redirect": redirect,
+                        "filters": filters,
+                    },
+                },
+            )
+
+            await manager.send_event(session_id, {"type": "end", "content": accumulated})
 
     except WebSocketDisconnect:
         manager.disconnect(session_id)
@@ -206,7 +233,7 @@ async def websocket_chat(websocket: WebSocket, session_id: str = "default"):
 
 
 async def stream_graph_response(graph, user_message: str, session_id: str, user_id=None) -> AsyncGenerator[dict, None]:
-    """流式执行图并yield每个 token"""
+    """保留旧函数签名（历史兼容）。当前 websocket 路径不再使用。"""
     try:
         result = await graph.ainvoke(
             {
@@ -217,31 +244,13 @@ async def stream_graph_response(graph, user_message: str, session_id: str, user_
             config={"configurable": {"thread_id": session_id}},
         )
 
-        response_content = result.get("response", "")
-        if not response_content:
-            last_msg = result["messages"][-1]
-            if hasattr(last_msg, "content"):
-                response_content = coerce_llm_content(last_msg.content)
-            elif isinstance(last_msg, (tuple, list)) and len(last_msg) >= 2:
-                response_content = coerce_llm_content(last_msg[1])
-            else:
-                response_content = str(last_msg)
-        else:
-            response_content = coerce_llm_content(response_content)
-        last_agent = result.get("last_agent", "response")
-
-        # 模拟流式输出（逐字发送）
+        response_content = result.get("response", "") or ""
+        response_content = coerce_llm_content(response_content)
         for char in response_content:
             yield {"type": "token", "content": char}
-            import asyncio
-            await asyncio.sleep(0.01)  # 控制打字速度
-
-        yield {"type": "agent", "agent": last_agent}
-
     except Exception as e:
         logger.error(f"图执行失败: {e}")
         yield {"type": "token", "content": f"抱歉，处理您的请求时出现了问题: {str(e)}"}
-        yield {"type": "agent", "agent": "error"}
 
 
 @app.get("/api/ai/sessions/{session_id}/history")

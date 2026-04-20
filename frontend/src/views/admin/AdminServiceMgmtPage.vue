@@ -65,7 +65,7 @@
       title="新增服务"
       width="640px"
       confirm-text="提交"
-      :loading="creating"
+      :loading="createLoading"
       @confirm="saveCreate"
     >
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="96px">
@@ -97,11 +97,16 @@
       </el-form>
     </AdminEditDialog>
 
-    <AdminEditDialog v-model="editOpen" title="编辑服务" :loading="saving" @confirm="saveEdit">
-      <el-form :model="form" label-width="88px">
-        <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
+    <AdminEditDialog
+      v-model="editOpen"
+      title="编辑服务"
+      :loading="editLoading"
+      @confirm="saveEdit"
+    >
+      <el-form :model="editForm" label-width="88px">
+        <el-form-item label="名称"><el-input v-model="editForm.name" /></el-form-item>
         <el-form-item label="服务类型">
-          <el-select v-model="form.category" placeholder="请选择" style="width: 100%">
+          <el-select v-model="editForm.category" placeholder="请选择" style="width: 100%">
             <el-option
               v-for="opt in SERVICE_CATEGORY_OPTIONS"
               :key="opt.value"
@@ -110,26 +115,27 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="价格"><el-input-number v-model="form.price" :min="0" :precision="2" /></el-form-item>
-        <el-form-item label="单位"><el-input v-model="form.unit" /></el-form-item>
+        <el-form-item label="价格"><el-input-number v-model="editForm.price" :min="0" :precision="2" /></el-form-item>
+        <el-form-item label="单位"><el-input v-model="editForm.unit" /></el-form-item>
         <el-form-item label="服务图标">
-          <ServiceIconPicker v-model="form.icon" />
+          <ServiceIconPicker v-model="editForm.icon" />
         </el-form-item>
-        <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
+        <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="3" /></el-form-item>
       </el-form>
     </AdminEditDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import type { FormInstance, FormRules } from 'element-plus'
+import { onMounted } from 'vue'
+import type { FormRules } from 'element-plus'
 import AdminCrudToolbar from '@/components/admin/AdminCrudToolbar.vue'
 import AdminEditDialog from '@/components/admin/AdminEditDialog.vue'
 import ServiceIconPicker from '@/components/admin/ServiceIconPicker.vue'
 import { adminStatusTagType, adminStatusText, normalizeAdminStatus } from '@/utils/adminCrud'
 import { useAdminActions } from '@/composables/useAdminActions'
 import { useAdminList } from '@/composables/useAdminList'
+import { useAdminForm } from '@/composables/useAdminForm'
 import {
   approveServiceTypeListing,
   createServiceType,
@@ -153,26 +159,7 @@ function serviceCategoryLabel(cat: unknown): string {
 }
 
 const { runAction, runConfirmAction } = useAdminActions()
-const createOpen = ref(false)
-const creating = ref(false)
-const createFormRef = ref<FormInstance>()
-const createForm = reactive({
-  name: '',
-  category: 'cleaning' as string,
-  price: 0,
-  unit: '次',
-  icon: '',
-  description: '',
-})
 
-const createRules: FormRules = {
-  name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择服务类型', trigger: 'change' }],
-  price: [{ required: true, message: '请输入基础价格', trigger: 'change' }],
-}
-
-const editOpen = ref(false)
-const saving = ref(false)
 const {
   loading,
   rows,
@@ -189,15 +176,23 @@ const {
   return allRows.filter((r) => normalizeAdminStatus(r.status) === status)
 })
 
-const form = reactive({
-  id: 0,
-  name: '',
-  category: 'cleaning',
-  price: 0,
-  unit: '次',
-  icon: '',
-  description: '',
-})
+const createRules: FormRules = {
+  name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
+  category: [{ required: true, message: '请选择服务类型', trigger: 'change' }],
+  price: [{ required: true, message: '请输入基础价格', trigger: 'change' }],
+}
+
+function initialServiceForm() {
+  return {
+    id: 0,
+    name: '',
+    category: 'cleaning' as string,
+    price: 0,
+    unit: '次',
+    icon: '',
+    description: '',
+  }
+}
 
 function normalizeCategory(raw: unknown): string {
   const s = String(raw ?? '').trim()
@@ -205,71 +200,59 @@ function normalizeCategory(raw: unknown): string {
   return 'other'
 }
 
-function resetCreateForm() {
-  createForm.name = ''
-  createForm.category = 'cleaning'
-  createForm.price = 0
-  createForm.unit = '次'
-  createForm.icon = ''
-  createForm.description = ''
-}
+const {
+  visible: createOpen,
+  loading: createLoading,
+  formRef: createFormRef,
+  form: createForm,
+  open: openCreate,
+  submit: saveCreate,
+} = useAdminForm({
+  initial: initialServiceForm,
+  successMessage: '服务创建成功',
+  onSuccess: () => load(),
+  onSubmit: (form) =>
+    createServiceType({
+      name: form.name,
+      category: form.category,
+      price: Number(form.price),
+      unit: form.unit || '次',
+      icon: form.icon || undefined,
+      description: form.description || undefined,
+    }).then(() => undefined),
+})
 
-function openCreate() {
-  resetCreateForm()
-  createOpen.value = true
-}
-
-async function saveCreate() {
-  const valid = await createFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-  creating.value = true
-  try {
-    await runAction(async () => {
-      await createServiceType({
-        name: createForm.name,
-        category: createForm.category,
-        price: Number(createForm.price),
-        unit: createForm.unit || '次',
-        icon: createForm.icon || undefined,
-        description: createForm.description || undefined,
-      })
-    }, '服务创建成功')
-    createOpen.value = false
-    await load()
-  } finally {
-    creating.value = false
-  }
-}
+const {
+  visible: editOpen,
+  loading: editLoading,
+  form: editForm,
+  openWith: openEditForm,
+  submit: saveEdit,
+} = useAdminForm({
+  initial: initialServiceForm,
+  successMessage: '服务已更新',
+  onSuccess: () => load(),
+  onSubmit: (form) =>
+    updateServiceType(form.id, {
+      name: form.name,
+      category: form.category,
+      price: form.price,
+      unit: form.unit || '次',
+      icon: form.icon || undefined,
+      description: form.description || undefined,
+    }).then(() => undefined),
+})
 
 function openEdit(row: Record<string, unknown>) {
-  form.id = Number(row.id)
-  form.name = String(row.name || '')
-  form.category = normalizeCategory(row.category)
-  form.price = Number(row.price || 0)
-  form.unit = String(row.unit || '次')
-  form.icon = String(row.icon || '')
-  form.description = String(row.description || '')
-  editOpen.value = true
-}
-
-async function saveEdit() {
-  saving.value = true
-  try {
-    await runAction(async () => {
-      await updateServiceType(form.id, {
-        name: form.name,
-        category: form.category,
-        price: form.price,
-        unit: form.unit || '次',
-        icon: form.icon || undefined,
-        description: form.description || undefined,
-      })
-    }, '服务已更新')
-    editOpen.value = false
-    await load()
-  } finally {
-    saving.value = false
-  }
+  openEditForm({
+    id: Number(row.id),
+    name: String(row.name || ''),
+    category: normalizeCategory(row.category),
+    price: Number(row.price || 0),
+    unit: String(row.unit || '次'),
+    icon: String(row.icon || ''),
+    description: String(row.description || ''),
+  })
 }
 
 async function approveRow(row: Record<string, unknown>) {

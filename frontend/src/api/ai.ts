@@ -5,6 +5,9 @@ import { get, post, del } from '@/utils/request'
 
 export interface AIChatResponse {
   intent: 'property' | 'service' | 'procurement' | 'general'
+  confidence?: number
+  sub_action?: 'list' | 'detail' | 'book' | 'my'
+  filters?: Record<string, unknown>
   reply: string
   data?: Record<string, unknown>
   redirect?: string | null

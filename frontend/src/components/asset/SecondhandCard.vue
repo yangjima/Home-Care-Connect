@@ -1,34 +1,35 @@
 <template>
-  <div class="item-card" @click="$router.push(`/secondhand/${item.id}`)">
-    <div class="item-img">
-      <img v-if="coverUrl" :src="coverUrl" :alt="item.title" class="cover" />
-      <span v-else class="emoji-fallback">{{ categoryEmoji }}</span>
-      <span class="item-condition">{{ conditionLabel }}</span>
-      <button type="button" class="item-like" :aria-pressed="liked" @click.stop="toggleLike">
-        {{ liked ? '❤️' : '🤍' }}
-      </button>
-    </div>
-    <div class="item-body">
-      <div class="item-name">{{ item.title }}</div>
-      <div class="item-price-row">
-        <span class="item-price">
-          ¥{{ formatMoney(item.price) }}
-          <small v-if="item.originalPrice && item.originalPrice > item.price">¥{{ formatMoney(item.originalPrice) }}</small>
-        </span>
+  <BaseCard clickable class="item-card" @click="$router.push(`/secondhand/${item.id}`)">
+    <template #media>
+      <div class="item-img">
+        <img v-if="coverUrl" :src="coverUrl" :alt="item.title" class="cover" />
+        <span v-else class="emoji-fallback">{{ categoryEmoji }}</span>
+        <span class="item-condition">{{ conditionLabel }}</span>
+        <button type="button" class="item-like" :aria-pressed="liked" @click.stop="toggleLike">
+          {{ liked ? '❤️' : '🤍' }}
+        </button>
       </div>
-      <div class="item-seller">
-        <div class="seller-avatar">{{ sellerInitial }}</div>
-        <span class="seller-name">{{ item.userName || '居友' }}</span>
-        <span v-if="item.integrityTag" class="seller-tag">诚信</span>
-      </div>
-      <div v-if="item.location" class="item-location">📍 {{ item.location }}</div>
+    </template>
+    <div class="item-name">{{ item.title }}</div>
+    <div class="item-price-row">
+      <span class="item-price">
+        ¥{{ formatMoney(item.price) }}
+        <small v-if="item.originalPrice && item.originalPrice > item.price">¥{{ formatMoney(item.originalPrice) }}</small>
+      </span>
     </div>
-  </div>
+    <div class="item-seller">
+      <div class="seller-avatar">{{ sellerInitial }}</div>
+      <span class="seller-name">{{ item.userName || '居友' }}</span>
+      <span v-if="item.integrityTag" class="seller-tag">诚信</span>
+    </div>
+    <div v-if="item.location" class="item-location">📍 {{ item.location }}</div>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { SecondhandItem } from '@/types'
+import BaseCard from '@/components/common/BaseCard.vue'
 
 const props = defineProps<{ item: SecondhandItem }>()
 
@@ -98,22 +99,10 @@ function formatMoney(v: number) {
 </script>
 
 <style scoped lang="scss">
-$item-radius: 12px;
-$primary: #2c7be5;
 $price: #ff4d4f;
 
-.item-card {
-  background: #fff;
-  border-radius: $item-radius;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  }
+.item-card :deep(.base-card__body) {
+  padding: 14px;
 }
 
 .item-img {
@@ -165,10 +154,6 @@ $price: #ff4d4f;
   border: none;
   padding: 0;
   line-height: 1;
-}
-
-.item-body {
-  padding: 14px;
 }
 
 .item-name {

@@ -3,10 +3,10 @@
     <AdminCrudToolbar
       v-model:keyword="keyword"
       v-model:status="statusFilter"
-      create-path="/admin/products/new"
       create-text="添加商品"
       keyword-placeholder="搜索名称/标题"
       @search="reloadActive"
+      @create="openCreate"
     />
 
     <div class="card">
@@ -124,17 +124,25 @@
         <el-form-item label="描述"><el-input v-model="secondhandForm.description" type="textarea" :rows="3" /></el-form-item>
       </el-form>
     </AdminEditDialog>
+
+    <AdminProductCreateDialog
+      v-model:visible="createOpen"
+      :default-type="activeTab === 'secondhand' ? 'secondhand' : 'procurement'"
+      @saved="onCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminCrudToolbar from '@/components/admin/AdminCrudToolbar.vue'
 import AdminEditDialog from '@/components/admin/AdminEditDialog.vue'
+import AdminProductCreateDialog from '@/components/admin/AdminProductCreateDialog.vue'
 import { adminStatusTagType, adminStatusText, normalizeAdminStatus } from '@/utils/adminCrud'
 import { useAdminActions } from '@/composables/useAdminActions'
 import { useAdminList } from '@/composables/useAdminList'
+import { useAdminForm } from '@/composables/useAdminForm'
 import {
   approveProcurementListing,
   approveSecondhandListing,
@@ -155,6 +163,7 @@ const router = useRouter()
 const activeTab = ref('procurement')
 const keyword = ref('')
 const statusFilter = ref('')
+const createOpen = ref(false)
 const {
   loading: loadingProcurement,
   rows: procurementRows,
@@ -189,85 +198,66 @@ const {
   },
   { keywordRef: keyword, statusRef: statusFilter },
 )
-const procurementEditOpen = ref(false)
-const secondhandEditOpen = ref(false)
-const savingProcurement = ref(false)
-const savingSecondhand = ref(false)
-
-const procurementForm = reactive({
-  id: 0,
-  name: '',
-  category: '',
-  price: 0,
-  stock: 0,
-  description: '',
+const {
+  visible: procurementEditOpen,
+  loading: savingProcurement,
+  form: procurementForm,
+  openWith: openProcurementForm,
+  submit: saveProcurement,
+} = useAdminForm({
+  initial: () => ({ id: 0, name: '', category: '', price: 0, stock: 0, description: '' }),
+  successMessage: '商品已更新',
+  onSuccess: () => loadProcurement(),
+  onSubmit: (form) =>
+    updateProcurementProduct(form.id, {
+      name: form.name,
+      category: form.category,
+      price: form.price,
+      stock: form.stock,
+      description: form.description || undefined,
+    }).then(() => undefined),
 })
 
-const secondhandForm = reactive({
-  id: 0,
-  title: '',
-  category: '',
-  price: 0,
-  condition: 'good',
-  description: '',
+const {
+  visible: secondhandEditOpen,
+  loading: savingSecondhand,
+  form: secondhandForm,
+  openWith: openSecondhandForm,
+  submit: saveSecondhand,
+} = useAdminForm({
+  initial: () => ({ id: 0, title: '', category: '', price: 0, condition: 'good', description: '' }),
+  successMessage: '商品已更新',
+  onSuccess: () => loadSecondhand(),
+  onSubmit: (form) =>
+    updateSecondhandItem(form.id, {
+      title: form.title,
+      category: form.category,
+      price: form.price,
+      condition: form.condition,
+      description: form.description || undefined,
+    }).then(() => undefined),
 })
 
 function openProcurementEdit(row: Record<string, unknown>) {
-  procurementForm.id = Number(row.id)
-  procurementForm.name = String(row.name || '')
-  procurementForm.category = String(row.category || '')
-  procurementForm.price = Number(row.price || 0)
-  procurementForm.stock = Number(row.stock || 0)
-  procurementForm.description = String(row.description || '')
-  procurementEditOpen.value = true
-}
-
-async function saveProcurement() {
-  savingProcurement.value = true
-  try {
-    await runAction(async () => {
-      await updateProcurementProduct(procurementForm.id, {
-        name: procurementForm.name,
-        category: procurementForm.category,
-        price: procurementForm.price,
-        stock: procurementForm.stock,
-        description: procurementForm.description || undefined,
-      })
-    }, '商品已更新')
-    procurementEditOpen.value = false
-    await loadProcurement()
-  } finally {
-    savingProcurement.value = false
-  }
+  openProcurementForm({
+    id: Number(row.id),
+    name: String(row.name || ''),
+    category: String(row.category || ''),
+    price: Number(row.price || 0),
+    stock: Number(row.stock || 0),
+    description: String(row.description || ''),
+  })
 }
 
 function openSecondhandEdit(row: Record<string, unknown>) {
-  secondhandForm.id = Number(row.id)
-  secondhandForm.title = String(row.title || '')
-  secondhandForm.category = String(row.category || '')
-  secondhandForm.price = Number(row.price || 0)
-  secondhandForm.condition = String(row.condition || 'good')
-  secondhandForm.description = String(row.description || '')
-  secondhandEditOpen.value = true
-}
-
-async function saveSecondhand() {
-  savingSecondhand.value = true
-  try {
-    await runAction(async () => {
-      await updateSecondhandItem(secondhandForm.id, {
-        title: secondhandForm.title,
-        category: secondhandForm.category,
-        price: secondhandForm.price,
-        condition: secondhandForm.condition,
-        description: secondhandForm.description || undefined,
-      })
-    }, '商品已更新')
-    secondhandEditOpen.value = false
-    await loadSecondhand()
-  } finally {
-    savingSecondhand.value = false
-  }
+  openSecondhandForm({
+    id: Number(row.id),
+    title: String(row.title || ''),
+    category: String(row.category || ''),
+    price: Number(row.price || 0),
+    condition: String(row.condition || 'good'),
+    description: String(row.description || ''),
+  })
 }
 
 async function approveProcurement(row: Record<string, unknown>) {
@@ -343,6 +333,14 @@ async function reloadActive() {
     return
   }
   await loadSecondhand()
+}
+
+function openCreate() {
+  createOpen.value = true
+}
+
+async function onCreated() {
+  await reloadActive()
 }
 
 function syncTabFromRoute() {

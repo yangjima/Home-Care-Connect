@@ -1,5 +1,5 @@
 """
-LLM 统一封装 - 支持 DashScope (qwen-plus)
+LLM 统一封装 - 支持 DashScope (Qwen/Qwen3.5-397B-A17B)
 """
 import logging
 from typing import Optional
@@ -53,7 +53,6 @@ def get_llm():
 
     # 最后的备用: 模拟 LLM（用于开发测试）
     logger.warning("未配置任何 LLM API Key，使用模拟 LLM")
-    from langchain_core.outputs import ChatGeneration, AIMessageChunk
     from langchain_core.messages import AIMessage
 
     class MockLLM:

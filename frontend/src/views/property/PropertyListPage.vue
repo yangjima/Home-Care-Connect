@@ -273,7 +273,7 @@ const sortOptions: { value: PropertyListSort; label: string }[] = [
 
 const keyword = ref('')
 const selectedTypes = ref<string[]>([])
-const activePriceId = ref('1000_2000')
+const activePriceId = ref('all')
 const useCustomPrice = ref(false)
 const customMinPrice = ref<number | undefined>()
 const customMaxPrice = ref<number | undefined>()
@@ -380,7 +380,7 @@ function runSearch() {
 function resetFilters() {
   keyword.value = ''
   selectedTypes.value = []
-  activePriceId.value = '1000_2000'
+  activePriceId.value = 'all'
   useCustomPrice.value = false
   customMinPrice.value = undefined
   customMaxPrice.value = undefined

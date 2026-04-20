@@ -1,7 +1,7 @@
 """
 LangGraph 聊天状态定义
 """
-from typing import TypedDict, Annotated, Sequence
+from typing import TypedDict, Annotated, Sequence, Any
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 import operator
 
@@ -19,7 +19,16 @@ class ChatState(TypedDict):
     """用户 ID"""
 
     route: str
-    """路由结果：property | service | procurement | general"""
+    """路由结果（兼容字段）：property | service | procurement | general"""
+
+    confidence: float
+    """意图置信度（0-1）"""
+
+    sub_action: str
+    """子动作：list | detail | book | my"""
+
+    filters: dict[str, Any]
+    """从用户话术抽取的筛选条件"""
 
     last_agent: str
     """最后执行的 Agent 名称"""

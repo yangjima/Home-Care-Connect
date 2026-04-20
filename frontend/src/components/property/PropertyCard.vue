@@ -1,33 +1,34 @@
 <template>
-  <div class="property-card" @click="$router.push(`/properties/${property.id}`)">
-    <div class="card-image">
-      <img :src="getCardImage()" :alt="property.title" />
-      <span class="card-tag">{{ property.type || '普通住宅' }}</span>
-    </div>
-    <div class="card-body">
-      <h3 class="card-title">{{ property.title }}</h3>
-      <p class="card-address">
-        <el-icon><Location /></el-icon>
-        {{ property.address }}
-      </p>
-      <div class="card-tags">
-        <span>{{ property.area }}㎡</span>
-        <span>{{ property.rooms }}室{{ property.livingRooms || 1 }}厅{{ property.bathrooms || 1 }}卫</span>
-        <span>{{ property.decoration || '普通装修' }}</span>
+  <BaseCard clickable @click="$router.push(`/properties/${property.id}`)">
+    <template #media>
+      <div class="card-image">
+        <img :src="getCardImage()" :alt="property.title" />
+        <span class="card-tag">{{ property.type || '普通住宅' }}</span>
       </div>
-      <div class="card-footer">
-        <span class="price">
-          <em>¥</em>{{ getCardPrice() }}
-          <span class="unit">/月</span>
-        </span>
-      </div>
+    </template>
+    <h3 class="card-title">{{ property.title }}</h3>
+    <p class="card-address">
+      <el-icon><Location /></el-icon>
+      {{ property.address }}
+    </p>
+    <div class="card-tags">
+      <span>{{ property.area }}㎡</span>
+      <span>{{ property.rooms }}室{{ property.livingRooms || 1 }}厅{{ property.bathrooms || 1 }}卫</span>
+      <span>{{ property.decoration || '普通装修' }}</span>
     </div>
-  </div>
+    <div class="card-footer">
+      <span class="price">
+        <em>¥</em>{{ getCardPrice() }}
+        <span class="unit">/月</span>
+      </span>
+    </div>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
 import { Location } from '@element-plus/icons-vue'
 import type { Property } from '@/types'
+import BaseCard from '@/components/common/BaseCard.vue'
 
 const props = defineProps<{ property: Partial<Property> }>()
 
@@ -44,20 +45,6 @@ function getCardPrice() {
 </script>
 
 <style scoped lang="scss">
-.property-card {
-  background: var(--color-bg-white);
-  border-radius: var(--border-radius-large);
-  overflow: hidden;
-  box-shadow: var(--shadow-light);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-base);
-  }
-}
-
 .card-image {
   position: relative;
   height: 180px;
@@ -79,10 +66,6 @@ function getCardPrice() {
     border-radius: 12px;
     font-size: 12px;
   }
-}
-
-.card-body {
-  padding: var(--spacing-md);
 }
 
 .card-title {

@@ -3,7 +3,22 @@
     "allow": [
       "Bash(dir /s /b d:\\\\code\\\\Home-Care-Connect\\\\*gateway*)",
       "Bash(dir /s /b \"d:\\\\code\\\\Home-Care-Connect\\\\services\\\\gateway\")",
-      "Bash(docker build *)"
+      "Bash(docker build *)",
+      "Bash(pip install *)",
+      "Bash(python -m pytest tests/test_router.py -x --tb=short)",
+      "Bash(python -m pytest tests/test_chat_graph.py --tb=short)",
+      "Bash(python -m pytest tests/ --tb=short)",
+      "Bash(docker exec *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"test-fix-2\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"verify-hello\"}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('intent:',d['data']['intent']\\); print\\('filters:',json.dumps\\(d['data']['filters'],ensure_ascii=False\\)\\)\")",
+      "Bash(python -m pytest tests/test_router.py tests/test_chat_graph.py --tb=short)",
+      "Bash(curl -s -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"v1\"}')",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\)['data']; print\\('intent:',d['intent']\\); print\\('filters:',json.dumps\\(d['filters'],ensure_ascii=False\\)\\)\")",
+      "Bash(curl -s --max-time 60 -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"v1\"}')",
+      "Bash(curl -v --max-time 60 -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"v2\"}')",
+      "Bash(curl -s --max-time 60 -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hello\",\"session_id\":\"v3-hello\"}')",
+      "Bash(curl -s --max-time 120 -X POST http://localhost:8000/api/ai/chat -H \"Content-Type: application/json\" --data-raw '{\"message\":\"hi\",\"session_id\":\"v4-hi\"}')"
     ]
   }
 }

@@ -13,6 +13,7 @@ export const useAIStore = defineStore('ai', () => {
   const messages = ref<ChatMessage[]>([])
   const loading = ref(false)
   const currentAgent = ref<string>('')
+  const autoRedirect = ref(false)
 
   let ws: WebSocket | null = null
 
@@ -60,14 +61,19 @@ export const useAIStore = defineStore('ai', () => {
         typeof rawReply === 'string' && rawReply.trim()
           ? rawReply.trim()
           : '抱歉，我暂时无法回答这个问题。'
-      addMessage({
+      const msg: ChatMessage = {
         role: 'assistant',
         content: assistantReply,
         agent: payload.intent || currentAgent.value,
-      })
+        redirect: payload.redirect ?? null,
+        filters: payload.filters,
+      }
+      addMessage(msg)
 
-      // 按设计文档：识别出业务意图时跳转对应页面
-      if (payload.redirect) {
+      // 按设计文档：跳转应可取消；默认不自动跳转
+      const confidence = typeof payload.confidence === 'number' ? payload.confidence : 0
+      const subAction = payload.sub_action
+      if (autoRedirect.value && payload.redirect && confidence > 0.8 && subAction === 'list') {
         await router.push(payload.redirect)
       }
     } catch (e) {
@@ -89,7 +95,7 @@ export const useAIStore = defineStore('ai', () => {
     ws = createChatWebSocket(
       sessionId,
       (data: object) => {
-        const event = data as { type: string; content?: string; agent?: string }
+        const event = data as any
         if (event.type === 'token' && event.content) {
           // 流式消息处理
           const lastMsg = messages.value[messages.value.length - 1]
@@ -98,14 +104,24 @@ export const useAIStore = defineStore('ai', () => {
           } else {
             addMessage({ role: 'assistant', content: event.content, id: 'streaming' })
           }
+        } else if (event.type === 'intent' && event.data) {
+          currentAgent.value = event.data.intent || ''
+          const lastMsg = messages.value[messages.value.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === 'streaming') {
+            lastMsg.agent = currentAgent.value
+          }
+        } else if (event.type === 'result' && event.data) {
+          const lastMsg = messages.value[messages.value.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === 'streaming') {
+            lastMsg.redirect = event.data.redirect ?? null
+            lastMsg.filters = event.data.filters
+          }
         } else if (event.type === 'end') {
           // 结束流式消息
           const lastMsg = messages.value[messages.value.length - 1]
           if (lastMsg && lastMsg.id === 'streaming') {
             lastMsg.id = undefined
           }
-        } else if (event.type === 'agent') {
-          currentAgent.value = event.agent || ''
         }
       },
       (error) => {
@@ -136,6 +152,7 @@ export const useAIStore = defineStore('ai', () => {
     messages,
     loading,
     currentAgent,
+    autoRedirect,
     currentSession,
     setCurrentSession,
     sendMessage,

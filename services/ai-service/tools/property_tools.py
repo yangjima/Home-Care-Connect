@@ -22,23 +22,44 @@ def _page_records(payload: dict) -> list:
     return []
 
 
-async def search_properties(query: str, user_id: Optional[str] = None) -> str:
+async def search_properties(
+    query: str,
+    user_id: Optional[str] = None,
+    filters: Optional[dict] = None,
+) -> str:
     """
-    搜索房源
+    搜索房源。
 
     Args:
-        query: 用户查询文本
+        query: 用户原始查询（仅在 filters 中无 keyword 时作为兜底）
         user_id: 用户 ID
+        filters: router 抽取的结构化筛选条件（keyword/minPrice/maxPrice/district/bedrooms）
 
     Returns:
-        JSON 格式的房源列表
+        格式化的房源列表文本；无结果时返回明确的空结果提示，调用方必须如实告知用户。
     """
+    filters = filters or {}
+    params: dict[str, Any] = {"page": 1, "pageSize": 5}
+
+    # 仅当 router 抽到了核心词才传 keyword；抽不到就走无关键词的列表查询，
+    # 避免把整句"我要租两千左右的房子"塞给后端当 keyword 匹配。
+    if filters.get("keyword"):
+        params["keyword"] = filters["keyword"]
+    if filters.get("minPrice") is not None:
+        params["minPrice"] = filters["minPrice"]
+    if filters.get("maxPrice") is not None:
+        params["maxPrice"] = filters["maxPrice"]
+    if filters.get("district"):
+        params["district"] = filters["district"]
+    if filters.get("bedrooms") is not None:
+        params["bedrooms"] = filters["bedrooms"]
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             base = settings.PROPERTY_SERVICE_URL.rstrip("/")
             response = await client.get(
                 f"{base}/properties",
-                params={"keyword": query, "page": 1, "pageSize": 5},
+                params=params,
                 headers=_build_headers(user_id),
             )
 
@@ -47,16 +68,16 @@ async def search_properties(query: str, user_id: Optional[str] = None) -> str:
                 properties = _page_records(data)
 
                 if not properties:
-                    return "暂无符合条件的房源，您可以尝试调整搜索条件。"
+                    return "EMPTY_RESULT: 当前平台没有符合用户条件的房源。"
 
                 return _format_properties(properties)
             else:
                 logger.warning(f"房源搜索 API 返回: {response.status_code}")
-                return _get_mock_properties(query)
+                return "EMPTY_RESULT: 房源服务暂时不可用。"
 
     except Exception as e:
-        logger.warning(f"房源服务调用失败，使用模拟数据: {e}")
-        return _get_mock_properties(query)
+        logger.warning(f"房源服务调用失败: {e}")
+        return "EMPTY_RESULT: 房源服务暂时不可用。"
 
 
 async def get_property_detail(property_id: int, user_id: Optional[str] = None) -> str:
@@ -150,27 +171,3 @@ def _format_property_detail(property_data: dict) -> str:
     )
 
 
-def _get_mock_properties(query: str) -> str:
-    """返回模拟房源数据（当服务不可用时）"""
-    return """根据您的需求，为您推荐以下热门房源：
-
-1. **城中心精品公寓**
-   📍 长安区中山路188号
-   💰 3500 元/月
-   📐 65㎡ | 2室1厅1卫
-   🏷️ 精装修 | 近地铁
-
-2. **科技园智慧小区**
-   📍 高新区创新路99号
-   💰 4200 元/月
-   📐 89㎡ | 3室2厅1卫
-   🏷️ 配套齐全 | 24h安保
-
-3. **河畔花园洋房**
-   📍 滨河区沿河大道188号
-   💰 5800 元/月
-   📐 120㎡ | 3室2厅2卫
-   🏷️ 河景房 | 花园小区
-
----
-💡 提示: 点击「查看详情」可了解更多信息，或直接预约看房！"""

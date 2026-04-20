@@ -210,6 +210,8 @@ export interface ChatMessage {
   content: string
   timestamp?: number
   agent?: string
+  redirect?: string | null
+  filters?: Record<string, unknown>
 }
 
 export interface ChatSession {
